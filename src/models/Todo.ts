@@ -12,10 +12,10 @@ const TodoSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Description cannot be more than 500 characters'],
   },
-  goalId: { // Changed from habitId to goalId
+  activityId: { // Changed from goalId to activityId
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Goal', // Changed from 'Habit' to 'Goal'
-    required: true, // A todo must be related to a specific goal
+    ref: 'Activity', // Changed from 'Goal' to 'Activity'
+    required: true, // A todo must be related to a specific activity
   },
   isCompleted: {
     type: Boolean,

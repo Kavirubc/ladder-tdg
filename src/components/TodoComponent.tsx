@@ -27,7 +27,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge'; // Added Badge import
+import { Badge } from '@/components/ui/badge';
+// Import Activity types
+import { Activity, Todo as TodoType } from '@/types/activity';
 
 // Form schema validation
 const formSchema = z.object({
@@ -35,25 +37,8 @@ const formSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
-// Todo interface
-interface Todo {
-  _id: string;
-  title: string;
-  description?: string;
-  isCompleted: boolean;
-  createdAt: string;
-  user: string;
-  goalId?: string;
-  isRepetitive?: boolean;
-  lastShown?: Date;
-}
-
-// Goal interface
-interface Goal {
-  _id: string;
-  title: string;
-  // Add other goal fields as necessary
-}
+// Todo interface (updated to use TodoType from global types)
+interface Todo extends TodoType { }
 
 // Optimistic action types
 type OptimisticAction =
@@ -64,19 +49,17 @@ type OptimisticAction =
 
 interface TodoComponentProps {
   userId: string;
-  goalId?: string; // goalId is now optional here, will be passed if opened from GoalTracker
-  isModal?: boolean; // To conditionally render parts of the UI
+  activityId?: string; // Changed from goalId to activityId
+  isModal?: boolean;
 }
 
-export default function TodoComponent({ userId, goalId, isModal }: TodoComponentProps) { // Destructure goalId and isModal
+export default function TodoComponent({ userId, activityId, isModal }: TodoComponentProps) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
-  const [goals, setGoals] = useState<Goal[]>([]); // Changed from habits to goals
 
-  // Optimistic UI updates with proper reducer
   const [optimisticTodos, updateOptimisticTodos] = useOptimistic<Todo[], OptimisticAction>(
     todos,
     (state, action) => {
@@ -97,7 +80,6 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
     }
   );
 
-  // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -106,55 +88,68 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
     },
   });
 
-  // Fetch todos and goals
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch only todos if goalId is provided (modal context), otherwise fetch all todos and goals
-        const todosResponse = await fetch(goalId ? `/api/todos?goalId=${goalId}` : `/api/todos`);
+        const endpoint = activityId
+          ? `/api/todos?activityId=${activityId}`
+          : `/api/todos?userId=${userId}`;
+        const todosResponse = await fetch(endpoint);
 
         if (!todosResponse.ok) {
           throw new Error('Failed to fetch todos');
         }
         const todosData = await todosResponse.json();
-        const fetchedTodos = Array.isArray(todosData.todos) ? todosData.todos : [];
+        // Ensure that the fetched data structure is correctly handled
+        const fetchedTodos = Array.isArray(todosData.todos)
+          ? todosData.todos
+          : (Array.isArray(todosData.data) ? todosData.data : []);
+
         startTransition(() => {
           updateOptimisticTodos({ type: 'SET', todos: fetchedTodos });
           setTodos(fetchedTodos);
         });
 
-        // Only fetch all goals if not in modal mode (or if needed for general view)
-        if (!isModal) {
-          const goalsResponse = await fetch(`/api/goals`);
-          if (!goalsResponse.ok) {
-            throw new Error('Failed to fetch goals');
-          }
-          const goalsData = await goalsResponse.json();
-          setGoals(Array.isArray(goalsData) ? goalsData : []);
-        }
-
       } catch (error) {
         console.error('Error fetching data:', error);
-        // Optionally, set an error state here to display to the user
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [userId]);
+  }, [userId, activityId, updateOptimisticTodos]);
 
-  // Add new todo
+  const commonTodoFields = (values: z.infer<typeof formSchema>, currentActivityId: string) => ({
+    title: values.title,
+    description: values.description || '',
+    user: userId,
+    activityId: currentActivityId,
+    // Default values for new fields from TodoType, adjust as necessary
+    category: 'General',
+    priority: 'Medium',
+    // dueDate: undefined, // Or handle as needed
+  });
+
   const addTodo = async (values: z.infer<typeof formSchema>) => {
-    const optimisticTodo: Todo = {
-      _id: 'temp-' + Date.now(),
-      ...values,
+    if (!activityId) {
+      form.setError("root", { type: "manual", message: "An activity context is required to add tasks." });
+      console.error("Activity ID is required to add a task.");
+      return;
+    }
+
+    const newTodoServerData = {
+      ...commonTodoFields(values, activityId),
       isCompleted: false,
-      createdAt: new Date().toISOString(),
-      user: userId,
     };
 
-    // Optimistically add the new todo
+    const optimisticTodo: Todo = {
+      _id: 'temp-' + Date.now(),
+      ...newTodoServerData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     startTransition(() => {
       updateOptimisticTodos({ type: 'ADD', todo: optimisticTodo });
     });
@@ -167,23 +162,27 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...values }),
+        body: JSON.stringify(newTodoServerData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add todo');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to add todo');
       }
 
       const { todo: savedTodo } = await response.json();
-
-      // Update both the real state and refresh optimistic state
-      setTodos(prevTodos => [...prevTodos, savedTodo]);
+      setTodos(prevTodos => [...prevTodos.filter(t => t._id !== optimisticTodo._id), savedTodo]);
+      startTransition(() => {
+        // Refresh optimistic state with server confirmed data
+        setTodos(currentTodos => [...currentTodos.filter(t => t._id !== optimisticTodo._id), savedTodo]);
+        updateOptimisticTodos({ type: 'SET', todos: [...todos.filter(t => t._id !== optimisticTodo._id), savedTodo] });
+      });
       form.reset();
     } catch (error) {
       console.error('Error adding todo:', error);
-      // Revert optimistic update by refreshing from real state
+      setTodos(prevTodos => prevTodos.filter(t => t._id !== optimisticTodo._id));
       startTransition(() => {
-        updateOptimisticTodos({ type: 'SET', todos });
+        updateOptimisticTodos({ type: 'SET', todos }); // Revert to original todos state
       });
     } finally {
       setPendingActions(prev => {
@@ -194,11 +193,9 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
     }
   };
 
-  // Toggle todo completion
   const toggleTodo = async (todoToToggle: Todo) => {
-    const updatedTodo = { ...todoToToggle, isCompleted: !todoToToggle.isCompleted };
+    const updatedTodo = { ...todoToToggle, isCompleted: !todoToToggle.isCompleted, updatedAt: new Date().toISOString() };
 
-    // Optimistically update the todo
     startTransition(() => {
       updateOptimisticTodos({ type: 'UPDATE', todo: updatedTodo });
     });
@@ -219,13 +216,14 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
       }
 
       const { todo: savedTodo } = await response.json();
-      // Update the real state
       setTodos(prevTodos => prevTodos.map(t => t._id === savedTodo._id ? savedTodo : t));
+      startTransition(() => {
+        updateOptimisticTodos({ type: 'SET', todos: todos.map(t => t._id === savedTodo._id ? savedTodo : t) });
+      });
     } catch (error) {
       console.error('Error updating todo:', error);
-      // Revert optimistic update
       startTransition(() => {
-        updateOptimisticTodos({ type: 'SET', todos });
+        updateOptimisticTodos({ type: 'SET', todos }); // Revert
       });
     } finally {
       setPendingActions(prev => {
@@ -236,9 +234,8 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
     }
   };
 
-  // Delete todo
   const deleteTodo = async (todoId: string) => {
-    // Optimistically remove the todo
+    const originalTodos = [...todos]; // Keep a copy for potential revert
     startTransition(() => {
       updateOptimisticTodos({ type: 'DELETE', id: todoId });
     });
@@ -253,14 +250,13 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
       if (!response.ok) {
         throw new Error('Failed to delete todo');
       }
-
-      // Update the real state
       setTodos(prevTodos => prevTodos.filter(todo => todo._id !== todoId));
+      // No need to update optimistic state here as it's already done and real state matches
     } catch (error) {
       console.error('Error deleting todo:', error);
-      // Revert optimistic update
+      setTodos(originalTodos); // Revert real state
       startTransition(() => {
-        updateOptimisticTodos({ type: 'SET', todos });
+        updateOptimisticTodos({ type: 'SET', todos: originalTodos }); // Revert optimistic state
       });
     } finally {
       setPendingActions(prev => {
@@ -271,22 +267,37 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
     }
   };
 
-  // Edit todo
   const handleEdit = (todo: Todo) => {
     setEditingTodo(todo);
     form.reset({ title: todo.title, description: todo.description });
     setDialogOpen(true);
   };
 
-  // Save edited todo
   const saveEdit = async (values: z.infer<typeof formSchema>) => {
     if (!editingTodo) return;
 
-    const updatedTodo: Todo = { ...editingTodo, ...values };
+    const currentActivityId = editingTodo.activityId;
+    if (!currentActivityId) {
+      console.error("Activity ID is missing from the todo being edited.");
+      form.setError("root", { type: "manual", message: "Cannot save task: Activity association is missing." });
+      return;
+    }
 
-    // Optimistically update the todo
+    const updatedTodoPayload = {
+      ...commonTodoFields(values, currentActivityId),
+      // Retain fields not in form but part of Todo, like isCompleted, createdAt
+      isCompleted: editingTodo.isCompleted,
+      createdAt: editingTodo.createdAt,
+    };
+
+    const optimisticUpdatedTodo: Todo = {
+      ...editingTodo,
+      ...updatedTodoPayload,
+      updatedAt: new Date().toISOString(),
+    };
+
     startTransition(() => {
-      updateOptimisticTodos({ type: 'UPDATE', todo: updatedTodo });
+      updateOptimisticTodos({ type: 'UPDATE', todo: optimisticUpdatedTodo });
     });
 
     setPendingActions(prev => new Set([...prev, editingTodo._id]));
@@ -297,7 +308,7 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: values.title, description: values.description }),
+        body: JSON.stringify(updatedTodoPayload),
       });
 
       if (!response.ok) {
@@ -306,399 +317,165 @@ export default function TodoComponent({ userId, goalId, isModal }: TodoComponent
 
       const { todo: savedTodo } = await response.json();
       setTodos(prevTodos => prevTodos.map(t => t._id === savedTodo._id ? savedTodo : t));
+      startTransition(() => {
+        updateOptimisticTodos({ type: 'SET', todos: todos.map(t => t._id === savedTodo._id ? savedTodo : t) });
+      });
       setDialogOpen(false);
       setEditingTodo(null);
     } catch (error) {
       console.error('Error saving todo:', error);
-      // Revert optimistic update
       startTransition(() => {
-        updateOptimisticTodos({ type: 'SET', todos });
+        updateOptimisticTodos({ type: 'SET', todos }); // Revert
       });
     } finally {
-      setPendingActions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(editingTodo._id);
-        return newSet;
-      });
-    }
-  };
-
-  // Handle form submission (add/edit todo)
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const { title, description } = values;
-    // Use passed goalId if in modal, otherwise get from select (if select is still shown)
-    const currentGoalId = goalId || (document.getElementById('goalId') as HTMLSelectElement)?.value || undefined;
-
-    if (!currentGoalId) {
-      // Handle error: goalId is required
-      // This could be a form error message
-      form.setError("root", { type: "manual", message: "A goal must be selected or provided." });
-      console.error("Goal ID is required to create or update a task.");
-      return; // Prevent submission
-    }
-
-    if (editingTodo) {
-      // Edit existing todo
-      const updatedTodo: Todo = { ...editingTodo, title, description };
-
-      // Optimistically update the todo
-      startTransition(() => {
-        updateOptimisticTodos({ type: 'UPDATE', todo: updatedTodo });
-      });
-
-      setPendingActions(prev => new Set([...prev, editingTodo._id]));
-
-      try {
-        const response = await fetch(`/api/todos/${editingTodo._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description, goalId: currentGoalId }), // Send goalId
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save todo');
-        }
-
-        const { todo: savedTodo } = await response.json();
-        setTodos(prevTodos => prevTodos.map(t => t._id === savedTodo._id ? savedTodo : t));
-        setDialogOpen(false);
-        setEditingTodo(null);
-      } catch (error) {
-        console.error('Error saving todo:', error);
-        // Revert optimistic update
-        startTransition(() => {
-          updateOptimisticTodos({ type: 'SET', todos });
-        });
-      } finally {
+      if (editingTodo) { // ensure editingTodo is not null
         setPendingActions(prev => {
           const newSet = new Set(prev);
           newSet.delete(editingTodo._id);
           return newSet;
         });
       }
-    } else {
-      // Add new todo
-      const newTodoServer: Omit<Todo, '_id' | 'createdAt'> = {
-        title,
-        description,
-        isCompleted: false,
-        user: userId,
-        goalId: currentGoalId, // Include goalId
-      };
-
-      // Optimistically add todo
-      const optimisticTodo: Todo = {
-        _id: 'temp-' + Date.now(),
-        ...newTodoServer,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Optimistically add the new todo
-      startTransition(() => {
-        updateOptimisticTodos({ type: 'ADD', todo: optimisticTodo });
-      });
-
-      setPendingActions(prev => new Set([...prev, optimisticTodo._id]));
-
-      try {
-        const response = await fetch('/api/todos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTodoServer),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to add todo');
-        }
-
-        const { todo: savedTodo } = await response.json();
-
-        // Update both the real state and refresh optimistic state
-        setTodos(prevTodos => [...prevTodos, savedTodo]);
-        form.reset();
-        setDialogOpen(false);
-      } catch (error) {
-        console.error('Error adding todo:', error);
-        // Revert optimistic update by refreshing from real state
-        startTransition(() => {
-          updateOptimisticTodos({ type: 'SET', todos });
-        });
-      } finally {
-        setPendingActions(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(optimisticTodo._id);
-          return newSet;
-        });
-      }
     }
   };
 
-  const openAddDialog = () => {
-    setEditingTodo(null);
-    form.reset({ title: '', description: '' });
-    setDialogOpen(true);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (editingTodo) {
+      await saveEdit(values);
+    } else {
+      await addTodo(values);
+    }
   };
 
-  const openEditDialog = (todo: Todo) => {
-    handleEdit(todo);
-  };
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen"><p>Loading tasks...</p></div>;
+  }
+
+  // Filter todos to display: if activityId is provided, show only those todos.
+  // Otherwise (general task page), show all todos fetched for the user.
+  const todosToDisplay = activityId
+    ? optimisticTodos.filter(todo => todo.activityId === activityId)
+    : optimisticTodos;
 
   return (
-    <Card className={`w-full ${isModal ? 'shadow-none border-none p-0' : 'max-w-4xl mx-auto shadow-lg'}`}>
-      <CardContent className={`${isModal ? 'pt-0' : 'pt-6'}`}>
-        {!isModal && (
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">My Tasks</h2>
-            <Button onClick={openAddDialog} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Add Task
-            </Button>
-          </div>
-        )}
+    <div className={`p-4 ${isModal ? '' : 'max-w-4xl mx-auto'}`}>
+      {!isModal && (
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">My Tasks</h1>
+          <Button onClick={() => {
+            if (!activityId && !isModal) {
+              alert("To add a new task here, please ensure an activity context is available or use the 'Add Task' button within a specific activity.");
+              return;
+            }
+            setEditingTodo(null);
+            form.reset({ title: '', description: '' });
+            setDialogOpen(true);
+          }}>Add New Task</Button>
+        </div>
+      )}
 
-        {/* Dialog for adding/editing todos */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>{editingTodo ? 'Edit Task' : 'Add New Task'}</DialogTitle>
-              <DialogDescription>
-                {editingTodo ? 'Update the details of your task.' : 'Fill in the details to add a new task.'}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="E.g., Finish project report" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+      {todosToDisplay.length === 0 && !isModal && (
+        <p className="text-center text-gray-500">No tasks found. Add some to get started!</p>
+      )}
+      {isModal && todosToDisplay.length === 0 && (
+        <p className="text-center text-gray-500 text-sm py-4">No tasks for this activity yet.</p>
+      )}
+
+      <div className="space-y-4">
+        {todosToDisplay.map(todo => (
+          <Card key={todo._id} className={`transition-all duration-300 ease-in-out ${pendingActions.has(todo._id) ? 'opacity-50' : 'opacity-100'} ${todo.isCompleted ? 'bg-green-50 dark:bg-green-900/30' : 'bg-white dark:bg-slate-900'}`}>
+            <CardContent className="p-4 flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id={`todo-${todo._id}`}
+                  checked={todo.isCompleted}
+                  onCheckedChange={() => toggleTodo(todo)}
+                  className="mt-1"
+                  aria-label={`Mark ${todo.title} as ${todo.isCompleted ? 'incomplete' : 'complete'}`}
                 />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="E.g., Include all sections and proofread" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <div className="flex-1">
+                  <label htmlFor={`todo-${todo._id}`} className={`font-medium cursor-pointer ${todo.isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                    {todo.title}
+                  </label>
+                  {todo.description && (
+                    <p className={`text-sm ${todo.isCompleted ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
+                      {todo.description}
+                    </p>
                   )}
-                />
-                {/* Goal Selector - Conditionally render if not in modal or if needed */}
-                {!goalId && !isModal && (
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    Created: {new Date(todo.createdAt || Date.now()).toLocaleDateString()}
+                    {todo.isRepetitive && <Badge variant="outline" className="ml-2">Repetitive</Badge>}
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-2 items-center">
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(todo)} aria-label="Edit task">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => deleteTodo(todo._id)} aria-label="Delete task">
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingTodo ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+            <DialogDescription>
+              {editingTodo
+                ? `Editing task: ${editingTodo.title}. Make your changes below.`
+                : activityId
+                  ? 'Adding a new task to the selected activity. Fill in the details below.'
+                  : 'Please select an activity before adding a task. (This message indicates a potential configuration issue if no activity is selected.)'}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
+              {!activityId && !editingTodo && (
+                <div className="text-sm text-red-600 dark:text-red-400 p-2 my-2 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20">
+                  <strong>Action Required:</strong> An activity must be associated with this task.
+                  This form currently requires an activity to be pre-selected (e.g., by opening it from an activity's detail page).
+                </div>
+              )}
+              {form.formState.errors.root && (
+                <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
+              )}
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Link to Goal</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <select
-                        id="goalId"
-                        defaultValue={editingTodo?.goalId || ""}
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        required
-                      >
-                        <option value="" disabled>Select a Goal</option>
-                        {goals.map((goal) => (
-                          <option key={goal._id} value={goal._id}>
-                            {goal.title}
-                          </option>
-                        ))}
-                      </select>
+                      <Input placeholder="e.g., Finish project report" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
-                {form.formState.errors.root && (
-                  <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Add more details..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingTodo ? 'Update Task' : 'Add Task'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="text-center py-10">
-            <p className="text-lg text-muted-foreground">Loading tasks...</p>
-          </div>
-        ) : optimisticTodos.length === 0 ? (
-          <div className="text-center py-10 border-2 border-dashed border-muted rounded-lg">
-            <p className="text-lg text-muted-foreground">You have no tasks yet.</p>
-            <p className="text-sm text-muted-foreground mt-1">Click "Add Task" to get started!</p>
-          </div>
-        ) : isModal ? (
-          // Simple list view for modal mode (when opened from a specific habit)
-          <ul className="space-y-3">
-            {optimisticTodos.map((todo) => (
-              <li
-                key={todo._id}
-                className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ease-in-out 
-                            ${pendingActions.has(todo._id) ? 'opacity-50 cursor-not-allowed' : ''}
-                            ${todo.isCompleted ? 'bg-muted/50 border-green-200 dark:border-green-700' : 'bg-card border-border'}`}
-              >
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id={`todo-${todo._id}`}
-                    checked={todo.isCompleted}
-                    onCheckedChange={() => toggleTodo(todo)}
-                    className="mt-1 transform scale-110"
-                    disabled={pendingActions.has(todo._id)}
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={`todo-${todo._id}`}
-                      className={`font-medium cursor-pointer ${todo.isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'
-                        }`}
-                    >
-                      {todo.title}
-                    </label>
-                    {todo.description && (
-                      <p className={`text-sm mt-0.5 ${todo.isCompleted ? 'line-through text-muted-foreground/80' : 'text-muted-foreground'}`}>
-                        {todo.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditDialog(todo)}
-                    disabled={pendingActions.has(todo._id)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteTodo(todo._id)}
-                    disabled={pendingActions.has(todo._id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          // Grouped by goal view for the tasks page
-          <div className="space-y-8">
-            {goals.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground">No goals found. Create goals first to add tasks.</p>
-              </div>
-            ) : (
-              goals.map(goal => {
-                const goalTodos = optimisticTodos.filter(todo => todo.goalId === goal._id);
-                const completedCount = goalTodos.filter((todo: Todo) => todo.isCompleted).length;
-                const totalCount = goalTodos.length;
-
-                return (
-                  <div key={goal._id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{goal.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Badge variant={completedCount === totalCount && totalCount > 0 ? "default" : "outline"}>
-                            {completedCount}/{totalCount} completed
-                          </Badge>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingTodo(null);
-                          form.reset({ title: '', description: '' });
-                          // Set the goalId in the form before opening dialog
-                          setTimeout(() => {
-                            const selectElement = document.getElementById('goalId') as HTMLSelectElement;
-                            if (selectElement) selectElement.value = goal._id;
-                          }, 50);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        Add Task
-                      </Button>
-                    </div>
-
-                    {goalTodos.length > 0 ? (
-                      <ul className="space-y-2">
-                        {goalTodos.map((todo: Todo) => (
-                          <li
-                            key={todo._id}
-                            className={`flex items-center justify-between p-3 rounded-lg bg-muted/30 transition-all duration-200 ease-in-out 
-                                      ${pendingActions.has(todo._id) ? 'opacity-50 cursor-not-allowed' : ''}
-                                      ${todo.isCompleted ? 'border-l-4 border-green-500' : 'border-l-4 border-transparent'}`}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <Checkbox
-                                id={`todo-${todo._id}`}
-                                checked={todo.isCompleted}
-                                onCheckedChange={() => toggleTodo(todo)}
-                                className="mt-1"
-                                disabled={pendingActions.has(todo._id)}
-                              />
-                              <div className="flex-1">
-                                <label
-                                  htmlFor={`todo-${todo._id}`}
-                                  className={`font-medium cursor-pointer ${todo.isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                                >
-                                  {todo.title}
-                                </label>
-                                {todo.description && (
-                                  <p className={`text-sm mt-0.5 ${todo.isCompleted ? 'line-through text-muted-foreground/80' : 'text-muted-foreground'}`}>
-                                    {todo.description}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEditDialog(todo)}
-                                disabled={pendingActions.has(todo._id)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteTodo(todo._id)}
-                                disabled={pendingActions.has(todo._id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">No tasks for this goal yet.</p>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              />
+              <Button type="submit" disabled={(!activityId && !editingTodo) || pendingActions.size > 0 || form.formState.isSubmitting}>
+                {pendingActions.size > 0 || form.formState.isSubmitting ? 'Saving...' : (editingTodo ? 'Save Changes' : 'Add Task')}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
