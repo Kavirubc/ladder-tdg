@@ -28,8 +28,9 @@ export default function Navbar() {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
+            const callbackUrl = `${window.location.origin}/login`;
             await signOut({
-                callbackUrl: '/login',
+                callbackUrl,
                 redirect: true
             });
         } catch (error) {
@@ -56,7 +57,7 @@ export default function Navbar() {
                         </h1>
                     </div>
 
-                   
+
 
                     {/* User info and logout */}
                     <div className="flex items-center space-x-4">
