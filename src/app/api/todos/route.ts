@@ -3,9 +3,10 @@ import connectDB from '@/lib/mongodb';
 import Todo from '@/models/Todo';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { startOfDay } from 'date-fns';
 
 // GET - Get all todos for the current user
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -15,8 +16,38 @@ export async function GET() {
 
     await connectDB();
 
-    // Fetch todos for the current user
-    const todos = await Todo.find({ user: session.user.id }).sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const activityId = searchParams.get('activityId'); // Changed from goalId
+    const includeArchived = searchParams.get('includeArchived') === 'true';
+
+    // Reset repetitive todos if they weren't shown yet today
+    const today = startOfDay(new Date());
+    await Todo.updateMany(
+      {
+        user: session.user.id,
+        isRepetitive: true,
+        isCompleted: true,
+        lastShown: { $lt: today },
+        isArchived: { $ne: true } // Don't reset archived todos
+      },
+      {
+        $set: { isCompleted: false, lastShown: new Date() }
+      }
+    );
+
+    let query: any = { user: session.user.id };
+
+    // By default, exclude archived todos unless specifically requested
+    if (!includeArchived) {
+      query.isArchived = { $ne: true };
+    }
+
+    if (activityId) { // Changed from goalId
+      query.activityId = activityId; // Changed from goalId
+    }
+
+    // Fetch todos for the current user, optionally filtered by activityId
+    const todos = await Todo.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ todos }, { status: 200 });
   } catch (error) {
@@ -38,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body
-    const { title, description } = await req.json();
+    const { title, description, activityId, isRepetitive } = await req.json(); // Changed from goalId
 
     // Validate required fields
     if (!title) {
@@ -48,14 +79,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!activityId) { // Changed from goalId
+      return NextResponse.json(
+        { message: 'Activity ID is required' }, // Changed from Goal ID
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     // Create new todo
-    const todo = await Todo.create({
+    const todoData: any = {
       title,
       description,
+      activityId, // Changed from goalId
       user: session.user.id,
-    });
+      isRepetitive: isRepetitive || false,
+      lastShown: new Date()
+    };
+
+    const todo = await Todo.create(todoData);
 
     return NextResponse.json({ todo }, { status: 201 });
   } catch (error) {

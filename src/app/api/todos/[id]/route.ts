@@ -75,12 +75,13 @@ export async function PUT(
     }
 
     // Parse request body
-    const { title, description, isCompleted } = await req.json(); // Added isCompleted
+    const { title, description, isCompleted, activityId, isRepetitive } = await req.json(); // Changed from goalId
 
     // Validate required fields - only title if not just toggling completion
-    if (title === undefined && description === undefined && isCompleted === undefined) {
+    if (title === undefined && description === undefined && isCompleted === undefined &&
+      activityId === undefined && isRepetitive === undefined) { // Changed from goalId
       return NextResponse.json(
-        { message: 'At least one field (title, description, or isCompleted) is required for update' },
+        { message: 'At least one field (title, description, isCompleted, activityId, or isRepetitive) is required for update' }, // Changed from goalId
         { status: 400 }
       );
     }
@@ -103,7 +104,7 @@ export async function PUT(
       return NextResponse.json({ message: 'Todo not found' }, { status: 404 });
     }
 
-    // Update todo fields if provided
+    // Update fields if provided
     if (title !== undefined) {
       todo.title = title;
     }
@@ -112,8 +113,19 @@ export async function PUT(
     }
     if (isCompleted !== undefined) {
       todo.isCompleted = isCompleted;
+      if (isCompleted === false && todo.isRepetitive) {
+        // Update lastShown when a repetitive task is uncompleted
+        todo.lastShown = new Date();
+      }
+    }
+    if (activityId !== undefined) { // Changed from goalId
+      todo.activityId = activityId; // Changed from goalId
+    }
+    if (isRepetitive !== undefined) {
+      todo.isRepetitive = isRepetitive;
     }
 
+    // Save updated todo
     await todo.save();
 
     return NextResponse.json({ todo }, { status: 200 });
@@ -161,6 +173,12 @@ export async function PATCH(
 
     // Update todo status
     todo.isCompleted = isCompleted;
+
+    // Update lastShown when a repetitive task is uncompleted
+    if (isCompleted === false && todo.isRepetitive) {
+      todo.lastShown = new Date();
+    }
+
     await todo.save();
 
     return NextResponse.json({ todo }, { status: 200 });
@@ -173,7 +191,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete a todo
+// DELETE - Archive a todo (soft delete)
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -195,14 +213,16 @@ export async function DELETE(
       return NextResponse.json({ message: 'Todo not found' }, { status: 404 });
     }
 
-    // Delete todo
-    await Todo.deleteOne({ _id: todoId });
+    // Archive todo instead of deleting
+    todo.isArchived = true;
+    todo.archivedAt = new Date();
+    await todo.save();
 
-    return NextResponse.json({ message: 'Todo deleted successfully' }, { status: 200 });
+    return NextResponse.json({ message: 'Todo archived successfully' }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting todo:', error);
+    console.error('Error archiving todo:', error);
     return NextResponse.json(
-      { message: 'An error occurred while deleting todo' },
+      { message: 'An error occurred while archiving todo' },
       { status: 500 }
     );
   }

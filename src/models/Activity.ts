@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-const HabitSchema = new mongoose.Schema({
+const ActivitySchema = new mongoose.Schema({
     title: {
         type: String,
-        required: [true, 'Please provide a habit title'],
+        required: [true, 'Please provide a title'],
         trim: true,
         maxlength: [100, 'Title cannot be more than 100 characters'],
     },
@@ -23,10 +23,10 @@ const HabitSchema = new mongoose.Schema({
         required: true,
         default: 'other',
     },
-    targetFrequency: {
+    targetFrequency: { // This field might be more relevant for activities that were habits
         type: String,
-        enum: ['daily', 'weekly'],
-        default: 'daily',
+        enum: ['daily', 'weekly', 'monthly', 'none'], // Added 'monthly' and 'none' for flexibility
+        default: 'none', // Default to 'none' if not a recurring activity
     },
     pointValue: {
         type: Number,
@@ -42,6 +42,15 @@ const HabitSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    // Fields for goal-specific aspects
+    isRecurring: { // To distinguish between one-time goals and recurring activities (habits)
+        type: Boolean,
+        default: false,
+    },
+    deadline: { // For activities that have a specific end date (goals)
+        type: Date,
+        optional: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -53,9 +62,7 @@ const HabitSchema = new mongoose.Schema({
 });
 
 // Middleware to calculate point value based on intensity
-HabitSchema.pre('validate', function (next) { // Changed from 'save' to 'validate'
-    console.log('Pre-validate middleware running. isNew:', this.isNew, 'isModified(intensity):', this.isModified('intensity'), 'intensity:', this.intensity);
-
+ActivitySchema.pre('validate', function (this: any, next) {
     if (this.isNew || this.isModified('intensity')) {
         switch (this.intensity) {
             case 'easy':
@@ -70,11 +77,15 @@ HabitSchema.pre('validate', function (next) { // Changed from 'save' to 'validat
             default:
                 this.pointValue = 10;
         }
-        console.log('Set pointValue to:', this.pointValue);
     }
+    next();
+});
+
+// Update the updatedAt timestamp
+ActivitySchema.pre('save', function (this: any, next) {
     this.updatedAt = new Date();
     next();
 });
 
-const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
-export default Habit;
+const Activity = mongoose.models.Activity || mongoose.model('Activity', ActivitySchema);
+export default Activity;

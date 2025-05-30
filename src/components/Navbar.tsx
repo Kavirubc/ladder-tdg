@@ -56,11 +56,15 @@ export default function Navbar() {
                         </h1>
                     </div>
 
+                   
+
                     {/* User info and logout */}
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
                             <User className="h-4 w-4" />
-                            <span className="hidden sm:inline">{session.user?.name}</span>
+                            <span className="hidden sm:inline">
+                                {session.user?.name}
+                            </span>
                         </div>
 
                         <Button

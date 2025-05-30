@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import TodoComponent from '@/components/TodoComponent';
-import HabitTracker from '@/components/HabitTracker';
+import IntegratedDashboard from '@/components/IntegratedDashboard';
 
 
 export default async function DashboardPage() {
@@ -20,8 +19,7 @@ export default async function DashboardPage() {
         <h1 className="text-3xl font-bold mb-8">Welcome, {session.user.name}</h1>
 
         <div className="space-y-8">
-          <HabitTracker userId={session.user.id} />
-          <TodoComponent userId={session.user.id} />
+          <IntegratedDashboard userId={session.user.id} />
         </div>
       </div>
     </>
