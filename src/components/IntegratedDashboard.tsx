@@ -33,6 +33,7 @@ export default function IntegratedDashboard({
     const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
     const [selectedActivityForTodo, setSelectedActivityForTodo] = useState<string | undefined>(undefined);
     const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+    const [editingActivity, setEditingActivity] = useState<Activity | undefined>(undefined);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -131,8 +132,14 @@ export default function IntegratedDashboard({
         }
     };
 
-    const handleActivityCreated = () => {
+    const handleActivitySaved = () => {
         fetchData(); // Refresh all data when an activity is created/updated
+        setEditingActivity(undefined); // Clear editing state
+    };
+
+    const openActivityForm = (activity?: Activity) => {
+        setEditingActivity(activity);
+        setIsActivityFormOpen(true);
     };
 
     const openTodoModal = (activityId?: string) => {
@@ -242,7 +249,7 @@ export default function IntegratedDashboard({
                                     <CardTitle className="text-lg">Today&apos;s Recurring Activities</CardTitle>
                                     <CardDescription>Focus on your daily/weekly habits</CardDescription>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => setIsActivityFormOpen(true)}>
+                                <Button variant="outline" size="sm" onClick={() => openActivityForm()}>
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Activity
                                 </Button>
@@ -323,7 +330,7 @@ export default function IntegratedDashboard({
                 <TabsContent value="recurring" className="space-y-4">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-xl font-semibold">All Recurring Activities</h3>
-                        <Button onClick={() => setIsActivityFormOpen(true)}><Plus className="h-4 w-4 mr-2" /> Add Recurring Activity</Button>
+                        <Button onClick={() => openActivityForm()}><Plus className="h-4 w-4 mr-2" /> Add Recurring Activity</Button>
                     </div>
                     {recurringActivities.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">No recurring activities defined yet.</p>
@@ -349,6 +356,9 @@ export default function IntegratedDashboard({
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
+                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
+                                                    Edit
+                                                </Button>
                                                 <Button
                                                     onClick={() => completeActivity(activity._id!)}
                                                     disabled={isCompletedToday}
@@ -374,7 +384,7 @@ export default function IntegratedDashboard({
                 <TabsContent value="goals" className="space-y-4">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-xl font-semibold">One-Time Goals</h3>
-                        <Button onClick={() => setIsActivityFormOpen(true)}><Plus className="h-4 w-4 mr-2" /> Add Goal</Button>
+                        <Button onClick={() => openActivityForm()}><Plus className="h-4 w-4 mr-2" /> Add Goal</Button>
                     </div>
                     {oneTimeActivities.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">No one-time goals defined yet.</p>
@@ -400,11 +410,14 @@ export default function IntegratedDashboard({
                                         </CardHeader>
                                         <CardContent className="space-y-3">
                                             <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                <Badge variant="secondary" className="capitalize">{activity.category}</Badge>
                                                 <Badge variant="outline" className="capitalize">{activity.intensity}</Badge>
+                                                {activity.deadline && <Badge variant="secondary"><Target className="h-3 w-3 mr-1" /> {format(parseISO(activity.deadline), 'MMM d, yyyy')}</Badge>}
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
+                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
+                                                    Edit
+                                                </Button>
                                                 <Button
                                                     onClick={() => completeActivity(activity._id!)}
                                                     disabled={isCompleted} // For one-time goals, completion is permanent
@@ -445,8 +458,9 @@ export default function IntegratedDashboard({
             <ActivityForm
                 isOpen={isActivityFormOpen}
                 onOpenChange={setIsActivityFormOpen}
-                onActivityCreated={fetchData} // Refresh data when an activity is created
+                onActivitySaved={handleActivitySaved} // Changed from onActivityCreated
                 userId={userId}
+                initialActivity={editingActivity} // Pass the activity to be edited
             />
 
             {/* Todo Modal - Render TodoComponent in a dialog if an activity is selected for adding a todo */}

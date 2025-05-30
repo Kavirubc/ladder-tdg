@@ -45,12 +45,12 @@ type ActivityFormValues = z.infer<typeof activityFormSchema>;
 
 const baseDefaultFormValues: ActivityFormValues = {
     title: '',
-    description: undefined,
+    description: '', // Changed from undefined
     intensity: ActivityIntensity.Medium,
     category: ActivityCategory.Other,
     isRecurring: false, // Application-level default
-    targetFrequency: undefined,
-    deadline: undefined,
+    targetFrequency: undefined, // Remains undefined as Select handles it
+    deadline: '', // Changed from undefined
 };
 
 interface ActivityFormProps {
@@ -100,16 +100,16 @@ export default function ActivityForm({
                 const currentIsRecurring = initialActivity.isRecurring ?? false;
                 form.reset({
                     title: initialActivity.title || '',
-                    description: initialActivity.description || undefined,
+                    description: initialActivity.description || '', // Changed from undefined
                     intensity: getIntensityEnum(initialActivity.intensity),
                     category: getCategoryEnum(initialActivity.category),
                     isRecurring: currentIsRecurring,
                     targetFrequency: currentIsRecurring
                         ? getFrequencyEnum(initialActivity.targetFrequency)
-                        : undefined,
-                    deadline: !currentIsRecurring && initialActivity.deadline 
-                        ? initialActivity.deadline.split('T')[0] 
-                        : undefined,
+                        : undefined, // Remains undefined
+                    deadline: !currentIsRecurring && initialActivity.deadline
+                        ? initialActivity.deadline.split('T')[0]
+                        : '', // Changed from undefined
                 });
             } else {
                 form.reset(baseDefaultFormValues);
@@ -127,16 +127,16 @@ export default function ActivityForm({
         const isEditMode = !!initialActivity?._id;
         const finalIsRecurring = values.isRecurring ?? false; // Ensure boolean for logic
 
-        const payload: any = { 
-            ...values, 
-            userId, 
+        const payload: any = {
+            ...values,
+            userId,
             isRecurring: finalIsRecurring // Send the definite boolean value
         };
 
         if (!finalIsRecurring) {
-            payload.targetFrequency = undefined; 
+            payload.targetFrequency = undefined;
         } else {
-            payload.deadline = undefined; 
+            payload.deadline = undefined;
             if (!payload.targetFrequency || payload.targetFrequency === ActivityFrequency.None) {
                 setFormError("Target frequency is required for recurring activities and cannot be 'None'.");
                 setIsSubmitting(false);
