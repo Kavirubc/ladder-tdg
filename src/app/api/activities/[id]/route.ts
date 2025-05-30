@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from '@/lib/mongodb';
 import Activity from '@/models/Activity';
 import User from '@/models/User';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -14,7 +14,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     await dbConnect();
 
     try {
-        const { id } = params;
+        const { id } = await params; // Await the params Promise
         const body = await request.json();
         const user = await User.findById(session.user.id);
         if (!user) {
@@ -22,7 +22,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         }
 
         const updatedActivity = await Activity.findOneAndUpdate(
-            { _id: id, user: user._id }, // Ensure the user owns the activity
+            { _id: id, user: user._id },
             body,
             { new: true, runValidators: true }
         );
@@ -39,7 +39,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -48,7 +48,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     await dbConnect();
 
     try {
-        const { id } = params;
+        const { id } = await params; // Await the params Promise
         const activity = await Activity.findOne({ _id: id, user: session.user.id });
 
         if (!activity) {
@@ -63,7 +63,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -72,7 +72,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     await dbConnect();
 
     try {
-        const { id } = params;
+        const { id } = await params; // Await the params Promise
         const deletedActivity = await Activity.findOneAndDelete({ _id: id, user: session.user.id });
 
         if (!deletedActivity) {
