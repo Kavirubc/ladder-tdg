@@ -1,0 +1,10 @@
+{
+  "overrides": [
+    {
+      "files": ["src/lib/mongodb.ts"],
+      "rules": {
+        "no-var": "off"
+      }
+    }
+  ]
+}

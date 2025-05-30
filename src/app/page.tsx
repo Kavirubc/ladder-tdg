@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import Image from "next/image";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 

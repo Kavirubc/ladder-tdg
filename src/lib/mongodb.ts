@@ -8,7 +8,9 @@ interface MongooseCache {
 
 // Extend the NodeJS global interface
 declare global {
+  /* eslint-disable no-var */
   var mongoose: MongooseCache | undefined;
+  /* eslint-enable no-var */
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -18,7 +20,7 @@ if (!MONGODB_URI) {
 }
 
 // Use the global mongoose cache or create it
-let cached = global.mongoose || { conn: null, promise: null };
+const cached = global.mongoose || { conn: null, promise: null };
 
 // Assign the cache to the global object
 if (!global.mongoose) {

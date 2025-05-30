@@ -5,8 +5,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import mongoose from 'mongoose';
 
-// Removed RouteParams interface in favor of inline typing
-
 // Helper function to check if an ID is valid
 function isValidObjectId(id: string) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -35,7 +33,7 @@ async function getTodoAndVerifyOwner(id: string, userId: string) {
 // GET - Get a specific todo
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -47,7 +45,7 @@ export async function GET(
     await connectDB();
 
     // Get and verify todo ownership
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
     const todo = await getTodoAndVerifyOwner(todoId, session.user.id);
 
     if (!todo) {
@@ -67,7 +65,7 @@ export async function GET(
 // PUT - Update a todo
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -90,7 +88,7 @@ export async function PUT(
     await connectDB();
 
     // Get and verify todo ownership
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
     const todo = await getTodoAndVerifyOwner(todoId, session.user.id);
 
     if (!todo) {
@@ -115,7 +113,7 @@ export async function PUT(
 // PATCH - Update todo completion status
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -138,7 +136,7 @@ export async function PATCH(
     await connectDB();
 
     // Get and verify todo ownership
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
     const todo = await getTodoAndVerifyOwner(todoId, session.user.id);
 
     if (!todo) {
@@ -162,7 +160,7 @@ export async function PATCH(
 // DELETE - Delete a todo
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -174,7 +172,7 @@ export async function DELETE(
     await connectDB();
 
     // Get and verify todo ownership
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
     const todo = await getTodoAndVerifyOwner(todoId, session.user.id);
 
     if (!todo) {

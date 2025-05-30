@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -9,10 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Form,
@@ -30,9 +25,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tooltip } from '@/components/ui/tooltip';
 import { Pencil, Trash2 } from 'lucide-react';
 
 // Form schema validation
@@ -50,12 +43,17 @@ interface Todo {
   createdAt: string;
 }
 
-export default function TodoComponent({ userId }: { userId: string }) {
+interface TodoComponentProps {
+  userId: string;
+}
+
+
+//Removed USER ID
+export default function TodoComponent({ }: TodoComponentProps) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-  const router = useRouter();
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -212,7 +210,7 @@ export default function TodoComponent({ userId }: { userId: string }) {
         <div className="text-center py-10">Loading tasks...</div>
       ) : todos.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">
-          No tasks yet. Click "Add New Task" to get started.
+          No tasks yet. Click &quot;Add New Task&quot; to get started.
         </div>
       ) : (
         <div className="grid gap-4">
