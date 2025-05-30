@@ -75,15 +75,23 @@ export async function PUT(
     }
 
     // Parse request body
-    const { title, description } = await req.json();
+    const { title, description, isCompleted } = await req.json(); // Added isCompleted
 
-    // Validate required fields
-    if (!title) {
+    // Validate required fields - only title if not just toggling completion
+    if (title === undefined && description === undefined && isCompleted === undefined) {
       return NextResponse.json(
-        { message: 'Title is required' },
+        { message: 'At least one field (title, description, or isCompleted) is required for update' },
         { status: 400 }
       );
     }
+
+    if (title !== undefined && !title) { // if title is provided, it cannot be empty
+      return NextResponse.json(
+        { message: 'Title cannot be empty' },
+        { status: 400 }
+      );
+    }
+
 
     await connectDB();
 
@@ -95,9 +103,17 @@ export async function PUT(
       return NextResponse.json({ message: 'Todo not found' }, { status: 404 });
     }
 
-    // Update todo
-    todo.title = title;
-    todo.description = description;
+    // Update todo fields if provided
+    if (title !== undefined) {
+      todo.title = title;
+    }
+    if (description !== undefined) {
+      todo.description = description;
+    }
+    if (isCompleted !== undefined) {
+      todo.isCompleted = isCompleted;
+    }
+
     await todo.save();
 
     return NextResponse.json({ todo }, { status: 200 });
