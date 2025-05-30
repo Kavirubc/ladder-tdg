@@ -1,4 +1,4 @@
-export interface Habit {
+export interface Goal {
     _id?: string;
     title: string;
     description?: string;
@@ -12,9 +12,9 @@ export interface Habit {
     updatedAt: Date;
 }
 
-export interface HabitCompletion {
+export interface GoalCompletion {
     _id?: string;
-    habitId: string;
+    goalId: string;
     userId: string;
     completedAt: Date;
     points: number;
@@ -48,14 +48,14 @@ export interface Achievement {
 export interface WeeklyStats {
     week: number;
     totalPoints: number;
-    completedHabits: number;
+    completedGoals: number;
     streak: number;
     achievements: Achievement[];
 }
 
-export interface HabitCalendarDay {
+export interface GoalCalendarDay {
     date: Date;
-    completedHabits: HabitCompletion[];
+    completedGoals: GoalCompletion[];
     totalPoints: number;
     hasCompletions: boolean;
 }
@@ -75,5 +75,7 @@ export interface Todo {
     isCompleted: boolean;
     createdAt: string;
     user: string;
-    habitId: string; // Ensure this is not optional if it's required by the model
+    goalId: string; // Changed from habitId to goalId
+    isRepetitive?: boolean; // Added for repetitive subtasks
+    lastShown?: Date; // Added to track when the task was last shown
 }

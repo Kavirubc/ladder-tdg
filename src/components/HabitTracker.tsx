@@ -39,17 +39,17 @@ import {
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, subWeeks } from 'date-fns';
 import type {
-    Habit,
-    HabitCompletion,
+    Goal,
+    GoalCompletion,
     LadderProgress,
-    HabitCalendarDay,
+    GoalCalendarDay,
     LadderRung,
     Todo // Added Todo type
 } from '@/types/habit';
 import TodoComponent from './TodoComponent'; // Import TodoComponent
 
 // Form schema validation
-const habitFormSchema = z.object({
+const goalFormSchema = z.object({
     title: z.string().min(1, 'Title is required').max(100, 'Title cannot be more than 100 characters'),
     description: z.string().max(500, 'Description cannot be more than 500 characters').optional(),
     intensity: z.enum(['easy', 'medium', 'hard']),
@@ -57,7 +57,7 @@ const habitFormSchema = z.object({
     targetFrequency: z.enum(['daily', 'weekly']),
 });
 
-interface HabitTrackerProps {
+interface GoalTrackerProps {
     userId: string;
 }
 
@@ -71,12 +71,12 @@ const LADDER_RUNGS: LadderRung[] = [
     { level: 7, pointsRequired: 1000, title: 'Ladder Legend', description: 'Transcended ordinary limits', reward: 'Crown badge & all themes' },
 ];
 
-export default function HabitTracker({ userId }: HabitTrackerProps) {
-    const [habits, setHabits] = useState<Habit[]>([]);
-    const [completions, setCompletions] = useState<HabitCompletion[]>([]);
+export default function GoalTracker({ userId }: GoalTrackerProps) {
+    const [goals, setGoals] = useState<Goal[]>([]);
+    const [completions, setCompletions] = useState<GoalCompletion[]>([]);
     const [ladderProgress, setLadderProgress] = useState<LadderProgress | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [calendarData, setCalendarData] = useState<HabitCalendarDay[]>([]);
+    const [calendarData, setCalendarData] = useState<GoalCalendarDay[]>([]);
     const [isAddingHabit, setIsAddingHabit] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,8 +84,8 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
     const [showTodoModalForHabit, setShowTodoModalForHabit] = useState<string | null>(null);
 
     // Initialize form
-    const form = useForm<z.infer<typeof habitFormSchema>>({
-        resolver: zodResolver(habitFormSchema),
+    const form = useForm<z.infer<typeof goalFormSchema>>({
+        resolver: zodResolver(goalFormSchema),
         defaultValues: {
             title: '',
             description: '',
@@ -101,7 +101,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
             setLoading(true);
             try {
                 await Promise.all([
-                    fetchHabits(),
+                    fetchGoals(),
                     fetchCompletions(),
                     fetchLadderProgress(),
                     fetchTodos() // Fetch todos
@@ -121,7 +121,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
         const startDate = subWeeks(today, 12); // Last 12 weeks
         const days = eachDayOfInterval({ start: startDate, end: today });
 
-        const calendarDays: HabitCalendarDay[] = days.map(date => {
+        const calendarDays: GoalCalendarDay[] = days.map(date => {
             const dayCompletions = completions.filter(completion =>
                 isSameDay(new Date(completion.completedAt), date)
             );
@@ -130,7 +130,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
 
             return {
                 date,
-                completedHabits: dayCompletions,
+                completedGoals: dayCompletions,
                 totalPoints,
                 hasCompletions: dayCompletions.length > 0,
             };
@@ -144,21 +144,21 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
         generateCalendarData();
     }, [generateCalendarData]);
 
-    const fetchHabits = async () => {
+    const fetchGoals = async () => {
         try {
-            const response = await fetch('/api/habits');
+            const response = await fetch('/api/goals');
             if (response.ok) {
                 const data = await response.json();
-                setHabits(data);
+                setGoals(data);
             }
         } catch (error) {
-            console.error('Error fetching habits:', error);
+            console.error('Error fetching goals:', error);
         }
     };
 
     const fetchCompletions = async () => {
         try {
-            const response = await fetch('/api/habits/completions');
+            const response = await fetch('/api/goals/completions');
             if (response.ok) {
                 const data = await response.json();
                 setCompletions(data);
@@ -170,7 +170,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
 
     const fetchLadderProgress = async () => {
         try {
-            const response = await fetch('/api/habits/progress');
+            const response = await fetch('/api/goals/progress');
             if (response.ok) {
                 const data = await response.json();
                 setLadderProgress(data);
@@ -194,7 +194,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
 
     const completeHabit = async (habitId: string) => {
         try {
-            const response = await fetch('/api/habits/completions', {
+            const response = await fetch('/api/goals/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ habitId }),
@@ -210,7 +210,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
 
     const undoHabitCompletion = async (habitId: string) => {
         try {
-            const response = await fetch(`/api/habits/completions?habitId=${habitId}`, {
+            const response = await fetch(`/api/goals/completions?habitId=${habitId}`, {
                 method: 'DELETE',
             });
 
@@ -228,19 +228,19 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
         return habitTodos.every(todo => todo.isCompleted);
     };
 
-    const createHabit = async (values: z.infer<typeof habitFormSchema>) => {
+    const createHabit = async (values: z.infer<typeof goalFormSchema>) => {
         if (isSubmitting) return;
 
         setIsSubmitting(true);
         try {
-            const response = await fetch('/api/habits', {
+            const response = await fetch('/api/goals', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),
             });
 
             if (response.ok) {
-                await fetchHabits();
+                await fetchGoals();
                 setIsAddingHabit(false);
                 form.reset();
             } else {
@@ -440,27 +440,27 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
             {/* Main Content Tabs */}
             <Tabs defaultValue="today" className="space-y-6">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="today">Today&apos;s Habits</TabsTrigger>
+                    <TabsTrigger value="today">Today&apos;s Goals</TabsTrigger>
                     <TabsTrigger value="calendar">Calendar View</TabsTrigger>
                     <TabsTrigger value="progress">Progress & Stats</TabsTrigger>
                 </TabsList>
 
-                {/* Today&apos;s Habits Tab */}
+                {/* Today&apos;s Goals Tab */}
                 <TabsContent value="today" className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold">Today&apos;s Habits</h2>
+                        <h2 className="text-2xl font-bold">Today&apos;s Goals</h2>
                         <Dialog open={isAddingHabit} onOpenChange={setIsAddingHabit}>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Add Habit
+                                    Add Goal
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Create New Habit</DialogTitle>
+                                    <DialogTitle>Create New Goal</DialogTitle>
                                     <DialogDescription>
-                                        Add a new habit to your ladder journey. Choose the intensity wisely!
+                                        Add a new goal to your ladder journey. Choose the intensity wisely!
                                     </DialogDescription>
                                 </DialogHeader>
                                 <Form {...form}>
@@ -470,7 +470,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                             name="title"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Habit Title</FormLabel>
+                                                    <FormLabel>Goal Title</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             placeholder="e.g., Morning workout"
@@ -489,7 +489,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                     <FormLabel>Description (Optional)</FormLabel>
                                                     <FormControl>
                                                         <Input
-                                                            placeholder="Brief description of your habit"
+                                                            placeholder="Brief description of your goal"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -553,7 +553,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                             className="w-full"
                                             disabled={isSubmitting}
                                         >
-                                            {isSubmitting ? 'Creating...' : 'Create Habit'}
+                                            {isSubmitting ? 'Creating...' : 'Create Goal'}
                                         </Button>
                                     </form>
                                 </Form>
@@ -562,34 +562,34 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {habits.map((habit) => {
+                        {goals.map((goal) => {
                             const todaysCompletions = getTodaysCompletions();
-                            const isCompleted = todaysCompletions.some(c => c.habitId === habit._id);
+                            const isCompleted = todaysCompletions.some(c => c.habitId === goal._id);
 
                             return (
-                                <Card key={habit._id} className={`transition-all hover:shadow-md ${isCompleted ? 'ring-2 ring-green-500' : ''}`}>
+                                <Card key={goal._id} className={`transition-all hover:shadow-md ${isCompleted ? 'ring-2 ring-green-500' : ''}`}>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-center justify-between">
-                                            <CardTitle className="text-lg">{habit.title}</CardTitle>
+                                            <CardTitle className="text-lg">{goal.title}</CardTitle>
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${getHabitIntensityColor(habit.intensity)}`} />
-                                                <Badge variant="outline">{habit.pointValue} pts</Badge>
+                                                <div className={`w-3 h-3 rounded-full ${getHabitIntensityColor(goal.intensity)}`} />
+                                                <Badge variant="outline">{goal.pointValue} pts</Badge>
                                             </div>
                                         </div>
-                                        {habit.description && (
-                                            <CardDescription>{habit.description}</CardDescription>
+                                        {goal.description && (
+                                            <CardDescription>{goal.description}</CardDescription>
                                         )}
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Badge variant="secondary">{habit.category}</Badge>
-                                                <Badge variant="outline">{habit.intensity}</Badge>
+                                                <Badge variant="secondary">{goal.category}</Badge>
+                                                <Badge variant="outline">{goal.intensity}</Badge>
                                             </div>
 
                                             {isCompleted ? (
                                                 <Button
-                                                    onClick={() => undoHabitCompletion(habit._id!)}
+                                                    onClick={() => undoHabitCompletion(goal._id!)}
                                                     variant="secondary"
                                                     size="sm"
                                                 >
@@ -598,11 +598,11 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                 </Button>
                                             ) : (
                                                 <Button
-                                                    onClick={() => completeHabit(habit._id!)}
-                                                    disabled={!areAllSubtasksCompleted(habit._id!)}
-                                                    variant={!areAllSubtasksCompleted(habit._id!) ? "outline" : "default"}
+                                                    onClick={() => completeHabit(goal._id!)}
+                                                    disabled={!areAllSubtasksCompleted(goal._id!)}
+                                                    variant={!areAllSubtasksCompleted(goal._id!) ? "outline" : "default"}
                                                     size="sm"
-                                                    title={!areAllSubtasksCompleted(habit._id!) ? "Complete all sub-tasks first" : ""}
+                                                    title={!areAllSubtasksCompleted(goal._id!) ? "Complete all sub-tasks first" : ""}
                                                 >
                                                     <Circle className="h-4 w-4 mr-2" />
                                                     Mark Done
@@ -610,17 +610,17 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                             )}
                                         </div>
 
-                                        {/* Display sub-tasks (todos) for this habit */}
+                                        {/* Display sub-tasks (todos) for this goal */}
                                         <div className="mt-4 pt-3 border-t border-muted">
                                             <h4 className="text-sm font-medium mb-2 flex justify-between items-center">
                                                 Sub-Tasks
-                                                <Button variant="ghost" size="sm" onClick={() => setShowTodoModalForHabit(habit._id!)}>
+                                                <Button variant="ghost" size="sm" onClick={() => setShowTodoModalForHabit(goal._id!)}>
                                                     <Plus className="h-3 w-3 mr-1" /> Add Task
                                                 </Button>
                                             </h4>
-                                            {todos.filter(todo => todo.habitId === habit._id).length > 0 ? (
+                                            {todos.filter(todo => todo.habitId === goal._id).length > 0 ? (
                                                 <ul className="space-y-2">
-                                                    {todos.filter(todo => todo.habitId === habit._id).map(todo => (
+                                                    {todos.filter(todo => todo.habitId === goal._id).map(todo => (
                                                         <li key={todo._id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded-md">
                                                             <span className={`${todo.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{todo.title}</span>
                                                             <Badge variant={todo.isCompleted ? "default" : "outline"} className={`${todo.isCompleted ? 'bg-green-500 text-white' : ''}`}>
@@ -630,7 +630,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                     ))}
                                                 </ul>
                                             ) : (
-                                                <p className="text-xs text-muted-foreground">No sub-tasks for this habit yet.</p>
+                                                <p className="text-xs text-muted-foreground">No sub-tasks for this goal yet.</p>
                                             )}
                                         </div>
                                     </CardContent>
@@ -648,10 +648,10 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <CalendarIcon className="h-5 w-5" />
-                                        Habit Heatmap
+                                        Goal Heatmap
                                     </CardTitle>
                                     <CardDescription>
-                                        Your habit completion journey over the past 12 weeks
+                                        Your goal completion journey over the past 12 weeks
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -674,7 +674,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                     <TooltipContent>
                                                         <p>{format(day.date, 'MMM d, yyyy')}</p>
                                                         <p>{day.totalPoints} points</p>
-                                                        <p>{day.completedHabits.length} habits completed</p>
+                                                        <p>{day.completedGoals.length} goals completed</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
@@ -723,8 +723,8 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                 isSameDay(day.date, selectedDate)
                                             );
 
-                                            if (!dayData || dayData.completedHabits.length === 0) {
-                                                return <p className="text-muted-foreground">No habits completed this day.</p>;
+                                            if (!dayData || dayData.completedGoals.length === 0) {
+                                                return <p className="text-muted-foreground">No goals completed this day.</p>;
                                             }
 
                                             return (
@@ -733,11 +733,11 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                                         <span className="font-medium">Total Points</span>
                                                         <Badge>{dayData.totalPoints}</Badge>
                                                     </div>
-                                                    {dayData.completedHabits.map((completion) => {
-                                                        const habit = habits.find(h => h._id === completion.habitId);
+                                                    {dayData.completedGoals.map((completion) => {
+                                                        const goal = goals.find(g => g._id === completion.habitId);
                                                         return (
                                                             <div key={completion._id} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                                                                <span className="text-sm">{habit?.title || 'Unknown Habit'}</span>
+                                                                <span className="text-sm">{goal?.title || 'Unknown Goal'}</span>
                                                                 <Badge variant="secondary">{completion.points} pts</Badge>
                                                             </div>
                                                         );
@@ -872,8 +872,8 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Active Habits</p>
-                                        <p className="text-2xl font-bold">{habits.length}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Active Goals</p>
+                                        <p className="text-2xl font-bold">{goals.length}</p>
                                     </div>
                                     <Target className="h-8 w-8 text-blue-500" />
                                 </div>
@@ -888,9 +888,9 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                 <Dialog open={!!showTodoModalForHabit} onOpenChange={() => setShowTodoModalForHabit(null)}>
                     <DialogContent className="sm:max-w-[600px]">
                         <DialogHeader>
-                            <DialogTitle>Manage Tasks for Habit</DialogTitle>
+                            <DialogTitle>Manage Tasks for Goal</DialogTitle>
                             <DialogDescription>
-                                Add, edit, or complete tasks related to this habit.
+                                Add, edit, or complete tasks related to this goal.
                             </DialogDescription>
                         </DialogHeader>
                         <TodoComponent userId={userId} habitId={showTodoModalForHabit} isModal={true} />

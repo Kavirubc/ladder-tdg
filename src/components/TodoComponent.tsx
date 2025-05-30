@@ -43,14 +43,16 @@ interface Todo {
   isCompleted: boolean;
   createdAt: string;
   user: string;
-  habitId?: string; // Added habitId
+  goalId?: string;
+  isRepetitive?: boolean;
+  lastShown?: Date;
 }
 
-// Habit interface
-interface Habit {
+// Goal interface
+interface Goal {
   _id: string;
   title: string;
-  // Add other habit fields as necessary
+  // Add other goal fields as necessary
 }
 
 // Optimistic action types
@@ -62,17 +64,17 @@ type OptimisticAction =
 
 interface TodoComponentProps {
   userId: string;
-  habitId?: string; // habitId is now optional here, will be passed if opened from HabitTracker
+  goalId?: string; // goalId is now optional here, will be passed if opened from GoalTracker
   isModal?: boolean; // To conditionally render parts of the UI
 }
 
-export default function TodoComponent({ userId, habitId, isModal }: TodoComponentProps) { // Destructure habitId and isModal
+export default function TodoComponent({ userId, goalId, isModal }: TodoComponentProps) { // Destructure goalId and isModal
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
-  const [habits, setHabits] = useState<Habit[]>([]); // Added state for habits
+  const [goals, setGoals] = useState<Goal[]>([]); // Changed from habits to goals
 
   // Optimistic UI updates with proper reducer
   const [optimisticTodos, updateOptimisticTodos] = useOptimistic<Todo[], OptimisticAction>(
@@ -104,13 +106,13 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
     },
   });
 
-  // Fetch todos and habits
+  // Fetch todos and goals
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch only todos if habitId is provided (modal context), otherwise fetch all todos and habits
-        const todosResponse = await fetch(habitId ? `/api/todos?habitId=${habitId}` : `/api/todos`);
+        // Fetch only todos if goalId is provided (modal context), otherwise fetch all todos and goals
+        const todosResponse = await fetch(goalId ? `/api/todos?goalId=${goalId}` : `/api/todos`);
 
         if (!todosResponse.ok) {
           throw new Error('Failed to fetch todos');
@@ -122,14 +124,14 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
           setTodos(fetchedTodos);
         });
 
-        // Only fetch all habits if not in modal mode (or if needed for general view)
+        // Only fetch all goals if not in modal mode (or if needed for general view)
         if (!isModal) {
-          const habitsResponse = await fetch(`/api/habits`);
-          if (!habitsResponse.ok) {
-            throw new Error('Failed to fetch habits');
+          const goalsResponse = await fetch(`/api/goals`);
+          if (!goalsResponse.ok) {
+            throw new Error('Failed to fetch goals');
           }
-          const habitsData = await habitsResponse.json();
-          setHabits(Array.isArray(habitsData) ? habitsData : []);
+          const goalsData = await goalsResponse.json();
+          setGoals(Array.isArray(goalsData) ? goalsData : []);
         }
 
       } catch (error) {
@@ -324,14 +326,14 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
   // Handle form submission (add/edit todo)
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { title, description } = values;
-    // Use passed habitId if in modal, otherwise get from select (if select is still shown)
-    const currentHabitId = habitId || (document.getElementById('habitId') as HTMLSelectElement)?.value || undefined;
+    // Use passed goalId if in modal, otherwise get from select (if select is still shown)
+    const currentGoalId = goalId || (document.getElementById('goalId') as HTMLSelectElement)?.value || undefined;
 
-    if (!currentHabitId) {
-      // Handle error: habitId is required
+    if (!currentGoalId) {
+      // Handle error: goalId is required
       // This could be a form error message
-      form.setError("root", { type: "manual", message: "A habit must be selected or provided." });
-      console.error("Habit ID is required to create or update a task.");
+      form.setError("root", { type: "manual", message: "A goal must be selected or provided." });
+      console.error("Goal ID is required to create or update a task.");
       return; // Prevent submission
     }
 
@@ -350,7 +352,7 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
         const response = await fetch(`/api/todos/${editingTodo._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description, habitId: currentHabitId }), // Send habitId
+          body: JSON.stringify({ title, description, goalId: currentGoalId }), // Send goalId
         });
 
         if (!response.ok) {
@@ -381,7 +383,7 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
         description,
         isCompleted: false,
         user: userId,
-        habitId: currentHabitId, // Include habitId
+        goalId: currentGoalId, // Include goalId
       };
 
       // Optimistically add todo
@@ -490,21 +492,21 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
                     </FormItem>
                   )}
                 />
-                {/* Habit Selector - Conditionally render if not in modal or if needed */}
-                {!habitId && !isModal && (
+                {/* Goal Selector - Conditionally render if not in modal or if needed */}
+                {!goalId && !isModal && (
                   <FormItem>
-                    <FormLabel>Link to Habit</FormLabel> {/* Changed label to be more direct as it is required */}
+                    <FormLabel>Link to Goal</FormLabel>
                     <FormControl>
                       <select
-                        id="habitId"
-                        defaultValue={editingTodo?.habitId || ""}
+                        id="goalId"
+                        defaultValue={editingTodo?.goalId || ""}
                         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        required // Make the select required if shown
+                        required
                       >
-                        <option value="" disabled>Select a Habit</option> {/* Added disabled default option */}
-                        {habits.map((habit) => (
-                          <option key={habit._id} value={habit._id}>
-                            {habit.title}
+                        <option value="" disabled>Select a Goal</option>
+                        {goals.map((goal) => (
+                          <option key={goal._id} value={goal._id}>
+                            {goal.title}
                           </option>
                         ))}
                       </select>
@@ -594,23 +596,23 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
             ))}
           </ul>
         ) : (
-          // Grouped by habit view for the tasks page
+          // Grouped by goal view for the tasks page
           <div className="space-y-8">
-            {habits.length === 0 ? (
+            {goals.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-muted-foreground">No habits found. Create habits first to add tasks.</p>
+                <p className="text-muted-foreground">No goals found. Create goals first to add tasks.</p>
               </div>
             ) : (
-              habits.map(habit => {
-                const habitTodos = optimisticTodos.filter(todo => todo.habitId === habit._id);
-                const completedCount = habitTodos.filter(todo => todo.isCompleted).length;
-                const totalCount = habitTodos.length;
+              goals.map(goal => {
+                const goalTodos = optimisticTodos.filter(todo => todo.goalId === goal._id);
+                const completedCount = goalTodos.filter((todo: Todo) => todo.isCompleted).length;
+                const totalCount = goalTodos.length;
 
                 return (
-                  <div key={habit._id} className="border rounded-lg p-4">
+                  <div key={goal._id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h3 className="font-semibold text-lg">{habit.title}</h3>
+                        <h3 className="font-semibold text-lg">{goal.title}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Badge variant={completedCount === totalCount && totalCount > 0 ? "default" : "outline"}>
                             {completedCount}/{totalCount} completed
@@ -623,10 +625,10 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
                         onClick={() => {
                           setEditingTodo(null);
                           form.reset({ title: '', description: '' });
-                          // Set the habitId in the form before opening dialog
+                          // Set the goalId in the form before opening dialog
                           setTimeout(() => {
-                            const selectElement = document.getElementById('habitId') as HTMLSelectElement;
-                            if (selectElement) selectElement.value = habit._id;
+                            const selectElement = document.getElementById('goalId') as HTMLSelectElement;
+                            if (selectElement) selectElement.value = goal._id;
                           }, 50);
                           setDialogOpen(true);
                         }}
@@ -635,9 +637,9 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
                       </Button>
                     </div>
 
-                    {habitTodos.length > 0 ? (
+                    {goalTodos.length > 0 ? (
                       <ul className="space-y-2">
-                        {habitTodos.map((todo) => (
+                        {goalTodos.map((todo: Todo) => (
                           <li
                             key={todo._id}
                             className={`flex items-center justify-between p-3 rounded-lg bg-muted/30 transition-all duration-200 ease-in-out 
@@ -688,7 +690,7 @@ export default function TodoComponent({ userId, habitId, isModal }: TodoComponen
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-muted-foreground py-2">No tasks for this habit yet.</p>
+                      <p className="text-sm text-muted-foreground py-2">No tasks for this goal yet.</p>
                     )}
                   </div>
                 );

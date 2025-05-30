@@ -75,12 +75,13 @@ export async function PUT(
     }
 
     // Parse request body
-    const { title, description, isCompleted, habitId } = await req.json(); // Added habitId
+    const { title, description, isCompleted, goalId, isRepetitive } = await req.json();
 
     // Validate required fields - only title if not just toggling completion
-    if (title === undefined && description === undefined && isCompleted === undefined && habitId === undefined) { // Added habitId
+    if (title === undefined && description === undefined && isCompleted === undefined &&
+      goalId === undefined && isRepetitive === undefined) {
       return NextResponse.json(
-        { message: 'At least one field (title, description, isCompleted, or habitId) is required for update' }, // Added habitId
+        { message: 'At least one field (title, description, isCompleted, goalId, or isRepetitive) is required for update' },
         { status: 400 }
       );
     }
@@ -112,9 +113,16 @@ export async function PUT(
     }
     if (isCompleted !== undefined) {
       todo.isCompleted = isCompleted;
+      if (isCompleted === false && todo.isRepetitive) {
+        // Update lastShown when a repetitive task is uncompleted
+        todo.lastShown = new Date();
+      }
     }
-    if (habitId !== undefined) { // Added habitId update
-      todo.habitId = habitId;
+    if (goalId !== undefined) {
+      todo.goalId = goalId;
+    }
+    if (isRepetitive !== undefined) {
+      todo.isRepetitive = isRepetitive;
     }
 
     // Save updated todo
@@ -165,6 +173,12 @@ export async function PATCH(
 
     // Update todo status
     todo.isCompleted = isCompleted;
+
+    // Update lastShown when a repetitive task is uncompleted
+    if (isCompleted === false && todo.isRepetitive) {
+      todo.lastShown = new Date();
+    }
+
     await todo.save();
 
     return NextResponse.json({ todo }, { status: 200 });

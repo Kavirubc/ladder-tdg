@@ -12,14 +12,22 @@ const TodoSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Description cannot be more than 500 characters'],
   },
-  habitId: { // New field to link Todo to a Habit
+  goalId: { // Changed from habitId to goalId
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Habit',
-    required: true, // Changed: A todo must be related to a specific habit
+    ref: 'Goal', // Changed from 'Habit' to 'Goal'
+    required: true, // A todo must be related to a specific goal
   },
   isCompleted: {
     type: Boolean,
     default: false,
+  },
+  isRepetitive: { // New field for repetitive tasks
+    type: Boolean,
+    default: false,
+  },
+  lastShown: { // New field to track when the task was last displayed
+    type: Date,
+    default: Date.now,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,

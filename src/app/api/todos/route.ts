@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Todo from '@/models/Todo';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { startOfDay } from 'date-fns';
 
 // GET - Get all todos for the current user
 export async function GET(req: NextRequest) {
@@ -16,14 +17,28 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const habitId = searchParams.get('habitId');
+    const goalId = searchParams.get('goalId');
+
+    // Reset repetitive todos if they weren't shown yet today
+    const today = startOfDay(new Date());
+    await Todo.updateMany(
+      {
+        user: session.user.id,
+        isRepetitive: true,
+        isCompleted: true,
+        lastShown: { $lt: today }
+      },
+      {
+        $set: { isCompleted: false, lastShown: new Date() }
+      }
+    );
 
     let query: any = { user: session.user.id };
-    if (habitId) {
-      query.habitId = habitId;
+    if (goalId) {
+      query.goalId = goalId;
     }
 
-    // Fetch todos for the current user, optionally filtered by habitId
+    // Fetch todos for the current user, optionally filtered by goalId
     const todos = await Todo.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ todos }, { status: 200 });
@@ -46,12 +61,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body
-    const { title, description, habitId } = await req.json(); // Added habitId
+    const { title, description, goalId, isRepetitive } = await req.json();
 
     // Validate required fields
     if (!title) {
       return NextResponse.json(
         { message: 'Title is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!goalId) {
+      return NextResponse.json(
+        { message: 'Goal ID is required' },
         { status: 400 }
       );
     }
@@ -62,12 +84,11 @@ export async function POST(req: NextRequest) {
     const todoData: any = {
       title,
       description,
+      goalId,
       user: session.user.id,
+      isRepetitive: isRepetitive || false,
+      lastShown: new Date()
     };
-
-    if (habitId) {
-      todoData.habitId = habitId;
-    }
 
     const todo = await Todo.create(todoData);
 
