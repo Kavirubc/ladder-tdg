@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 // Import Activity types
 import { Activity, Todo as TodoType } from '@/types/activity';
@@ -242,7 +242,7 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
     }
   };
 
-  const deleteTodo = async (todoId: string) => {
+  const archiveTodo = async (todoId: string) => {
     const originalTodos = [...todos]; // Keep a copy for potential revert
     startTransition(() => {
       updateOptimisticTodos({ type: 'DELETE', id: todoId });
@@ -252,16 +252,16 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
 
     try {
       const response = await fetch(`/api/todos/${todoId}`, {
-        method: 'DELETE',
+        method: 'DELETE', // This now archives instead of deletes
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete todo');
+        throw new Error('Failed to archive todo');
       }
       setTodos(prevTodos => prevTodos.filter(todo => todo._id !== todoId));
       // No need to update optimistic state here as it's already done and real state matches
     } catch (error) {
-      console.error('Error deleting todo:', error);
+      console.error('Error archiving todo:', error);
       setTodos(originalTodos); // Revert real state
       startTransition(() => {
         updateOptimisticTodos({ type: 'SET', todos: originalTodos }); // Revert optimistic state
@@ -419,8 +419,8 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
                 <Button variant="ghost" size="icon" onClick={() => handleEdit(todo)} aria-label="Edit task">
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => deleteTodo(todo._id)} aria-label="Delete task">
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                <Button variant="ghost" size="icon" onClick={() => archiveTodo(todo._id)} aria-label="Archive task">
+                  <Archive className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
             </CardContent>

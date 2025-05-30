@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const activityId = searchParams.get('activityId'); // Changed from goalId
+    const includeArchived = searchParams.get('includeArchived') === 'true';
 
     // Reset repetitive todos if they weren't shown yet today
     const today = startOfDay(new Date());
@@ -26,7 +27,8 @@ export async function GET(req: NextRequest) {
         user: session.user.id,
         isRepetitive: true,
         isCompleted: true,
-        lastShown: { $lt: today }
+        lastShown: { $lt: today },
+        isArchived: { $ne: true } // Don't reset archived todos
       },
       {
         $set: { isCompleted: false, lastShown: new Date() }
@@ -34,6 +36,12 @@ export async function GET(req: NextRequest) {
     );
 
     let query: any = { user: session.user.id };
+
+    // By default, exclude archived todos unless specifically requested
+    if (!includeArchived) {
+      query.isArchived = { $ne: true };
+    }
+
     if (activityId) { // Changed from goalId
       query.activityId = activityId; // Changed from goalId
     }

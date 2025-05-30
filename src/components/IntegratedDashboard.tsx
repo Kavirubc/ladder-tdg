@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, Circle, Calendar, Plus, Repeat, Target, ListChecks } from 'lucide-react';
+import { CheckCircle2, Circle, Calendar, Plus, Repeat, Target, ListChecks, RotateCcw } from 'lucide-react';
 import { format, isSameDay, parseISO } from 'date-fns';
 import type { Activity, ActivityCompletion, Todo, ActivityProgressStats } from '@/types/activity';
 import ActivityForm from '@/components/ActivityForm'; // Import the ActivityForm component
@@ -29,6 +29,7 @@ export default function IntegratedDashboard({
     const router = useRouter(); // Initialize useRouter
     const [activities, setActivities] = useState<Activity[]>([]);
     const [todos, setTodos] = useState<Todo[]>([]);
+    const [archivedTodos, setArchivedTodos] = useState<Todo[]>([]);
     const [activityCompletions, setActivityCompletions] = useState<ActivityCompletion[]>([]);
     const [progressStats, setProgressStats] = useState<ActivityProgressStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -40,9 +41,10 @@ export default function IntegratedDashboard({
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [activitiesRes, todosRes, completionsRes, progressRes] = await Promise.all([
+            const [activitiesRes, todosRes, archivedTodosRes, completionsRes, progressRes] = await Promise.all([
                 fetch('/api/activities'),
                 fetch('/api/todos'),
+                fetch('/api/todos/archived'),
                 fetch('/api/activities/completions'),
                 fetch('/api/activities/progress')
             ]);
@@ -55,6 +57,11 @@ export default function IntegratedDashboard({
             if (todosRes.ok) {
                 const todosData = await todosRes.json();
                 setTodos(todosData.todos || []);
+            }
+
+            if (archivedTodosRes.ok) {
+                const archivedTodosData = await archivedTodosRes.json();
+                setArchivedTodos(archivedTodosData.todos || []);
             }
 
             if (completionsRes.ok) {
@@ -94,6 +101,44 @@ export default function IntegratedDashboard({
             }
         } catch (error) {
             console.error('Error completing activity:', error);
+        }
+    };
+
+    const undoActivityCompletion = async (activityId: string) => {
+        try {
+            const response = await fetch(`/api/activities/completions?activityId=${activityId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                // Refresh data after undo
+                fetchData();
+            } else {
+                const errorData = await response.json();
+                console.error('Error undoing completion:', errorData.message);
+            }
+        } catch (error) {
+            console.error('Error undoing activity completion:', error);
+        }
+    };
+
+    const restoreArchivedTodo = async (todoId: string) => {
+        try {
+            const response = await fetch('/api/todos/archived', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ todoId }),
+            });
+
+            if (response.ok) {
+                // Refresh data after restore
+                fetchData();
+            } else {
+                const errorData = await response.json();
+                console.error('Error restoring todo:', errorData.message);
+            }
+        } catch (error) {
+            console.error('Error restoring archived todo:', error);
         }
     };
 
@@ -241,22 +286,23 @@ export default function IntegratedDashboard({
 
             {/* Main Content */}
             <Tabs defaultValue="today" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-4">
                     <TabsTrigger value="today">Today's Focus</TabsTrigger>
                     <TabsTrigger value="recurring">Recurring</TabsTrigger>
                     <TabsTrigger value="goals">One-Time Goals</TabsTrigger>
                     <TabsTrigger value="all-tasks">All Tasks</TabsTrigger>
+                    <TabsTrigger value="archived">Archived Tasks</TabsTrigger>
                 </TabsList>
 
                 {/* Tab Content for Today's Focus */}
                 <TabsContent value="today" className="space-y-4">
                     <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Today's Recurring Activities (Habits) */}
+                        {/* Today's Activities (Both Recurring and One-Time) */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle className="text-lg">Today&apos;s Recurring Activities</CardTitle>
-                                    <CardDescription>Focus on your daily/weekly habits</CardDescription>
+                                    <CardTitle className="text-lg">Today&apos;s Activities</CardTitle>
+                                    <CardDescription>Focus on your habits and goals for today</CardDescription>
                                 </div>
                                 <Button variant="outline" size="sm" onClick={() => openActivityForm()}>
                                     <Plus className="h-4 w-4 mr-2" />
@@ -264,52 +310,94 @@ export default function IntegratedDashboard({
                                 </Button>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {recurringActivities.length === 0 ? (
-                                    <p className="text-muted-foreground text-center py-4">
-                                        No recurring activities set up. Add some habits!
-                                    </p>
-                                ) : (
-                                    recurringActivities.filter(act => act.targetFrequency === 'daily' || act.targetFrequency === 'weekly') // Show daily/weekly for today
-                                        .map((activity) => {
-                                            const isCompletedToday = todaysCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
-                                            return (
-                                                <div key={activity._id} className={`p-3 rounded-lg border transition-all ${isCompletedToday ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'hover:bg-muted'}`}>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
-                                                            <div>
-                                                                <div className="font-medium">{activity.title}</div>
-                                                                {activity.description && (
-                                                                    <div className="text-sm text-muted-foreground">{activity.description}</div>
+                                {/* Show both recurring activities for today and incomplete one-time goals */}
+                                {(() => {
+                                    const todaysRecurringActivities = recurringActivities.filter(act =>
+                                        act.targetFrequency === 'daily' || act.targetFrequency === 'weekly'
+                                    );
+                                    const incompleteOneTimeActivities = oneTimeActivities.filter(act =>
+                                        !activityCompletions.some(c =>
+                                            c.activityId === act._id ||
+                                            (typeof c.activityId === 'object' && c.activityId._id === act._id)
+                                        )
+                                    );
+                                    const allTodaysActivities = [...todaysRecurringActivities, ...incompleteOneTimeActivities];
+
+                                    if (allTodaysActivities.length === 0) {
+                                        return (
+                                            <p className="text-muted-foreground text-center py-4">
+                                                No activities set up for today. Add some activities to get started!
+                                            </p>
+                                        );
+                                    }
+
+                                    return allTodaysActivities.map((activity) => {
+                                        const isCompletedToday = todaysCompletions.some(c =>
+                                            c.activityId === activity._id ||
+                                            (typeof c.activityId === 'object' && c.activityId._id === activity._id)
+                                        );
+                                        const isOneTime = !activity.isRecurring;
+
+                                        return (
+                                            <div key={activity._id} className={`p-3 rounded-lg border transition-all ${isCompletedToday ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'hover:bg-muted'}`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
+                                                        <div>
+                                                            <div className="font-medium flex items-center gap-2">
+                                                                {activity.title}
+                                                                {isOneTime && <Badge variant="secondary" className="text-xs">Goal</Badge>}
+                                                            </div>
+                                                            {activity.description && (
+                                                                <div className="text-sm text-muted-foreground">{activity.description}</div>
+                                                            )}
+                                                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                                                {isOneTime ? (
+                                                                    <><Target className="h-3 w-3" /> One-time goal</>
+                                                                ) : (
+                                                                    <><Repeat className="h-3 w-3" /> {activity.targetFrequency}</>
                                                                 )}
-                                                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                                                    <Repeat className="h-3 w-3" /> {activity.targetFrequency}
-                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                            <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
-                                                                <ListChecks className="h-4 w-4" />
-                                                            </Button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline">{activity.pointValue} pts</Badge>
+                                                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
+                                                            <ListChecks className="h-4 w-4" />
+                                                        </Button>
+                                                        {isCompletedToday ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    disabled
+                                                                >
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => undoActivityCompletion(activity._id!)}
+                                                                    title="Undo completion"
+                                                                >
+                                                                    <RotateCcw className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
                                                             <Button
                                                                 onClick={() => completeActivity(activity._id!)}
-                                                                disabled={isCompletedToday}
-                                                                variant={isCompletedToday ? "secondary" : "default"}
+                                                                variant="default"
                                                                 size="sm"
                                                             >
-                                                                {isCompletedToday ? (
-                                                                    <CheckCircle2 className="h-4 w-4" />
-                                                                ) : (
-                                                                    <Circle className="h-4 w-4" />
-                                                                )}
+                                                                <Circle className="h-4 w-4" />
                                                             </Button>
-                                                        </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            );
-                                        })
-                                )}
+                                            </div>
+                                        );
+                                    });
+                                })()}
                             </CardContent>
                         </Card>
 
@@ -426,7 +514,7 @@ export default function IntegratedDashboard({
                                                 <Badge variant="secondary" className="capitalize"><Repeat className="h-3 w-3 mr-1" /> {activity.targetFrequency}</Badge>
                                                 <Badge variant="outline" className="capitalize">{activity.intensity}</Badge>
                                             </div>
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
                                                 <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
                                                     Edit
@@ -434,18 +522,33 @@ export default function IntegratedDashboard({
                                                 <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
                                                     <ListChecks className="h-4 w-4 mr-1" /> Tasks
                                                 </Button>
-                                                <Button
-                                                    onClick={() => completeActivity(activity._id!)}
-                                                    disabled={isCompletedToday}
-                                                    variant={isCompletedToday ? "secondary" : "default"}
-                                                    size="sm"
-                                                >
-                                                    {isCompletedToday ? (
-                                                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Completed Today</>
-                                                    ) : (
-                                                        <><Circle className="h-4 w-4 mr-2" /> Mark Done</>
-                                                    )}
-                                                </Button>
+                                                {isCompletedToday ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            disabled
+                                                        >
+                                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Completed Today
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => undoActivityCompletion(activity._id!)}
+                                                            title="Undo completion"
+                                                        >
+                                                            <RotateCcw className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => completeActivity(activity._id!)}
+                                                        variant="default"
+                                                        size="sm"
+                                                    >
+                                                        <Circle className="h-4 w-4 mr-2" /> Mark Done
+                                                    </Button>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -488,7 +591,7 @@ export default function IntegratedDashboard({
                                                 <Badge variant="outline" className="capitalize">{activity.intensity}</Badge>
                                                 {activity.deadline && <Badge variant="secondary"><Target className="h-3 w-3 mr-1" /> {format(parseISO(activity.deadline), 'MMM d, yyyy')}</Badge>}
                                             </div>
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
                                                 <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
                                                     Edit
@@ -496,18 +599,33 @@ export default function IntegratedDashboard({
                                                 <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
                                                     <ListChecks className="h-4 w-4 mr-1" /> Tasks
                                                 </Button>
-                                                <Button
-                                                    onClick={() => completeActivity(activity._id!)}
-                                                    disabled={isCompleted} // For one-time goals, completion is permanent
-                                                    variant={isCompleted ? "secondary" : "default"}
-                                                    size="sm"
-                                                >
-                                                    {isCompleted ? (
-                                                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Completed</>
-                                                    ) : (
-                                                        <><Circle className="h-4 w-4 mr-2" /> Mark as Done</>
-                                                    )}
-                                                </Button>
+                                                {isCompleted ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            disabled
+                                                        >
+                                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Completed
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => undoActivityCompletion(activity._id!)}
+                                                            title="Undo completion"
+                                                        >
+                                                            <RotateCcw className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => completeActivity(activity._id!)}
+                                                        variant="default"
+                                                        size="sm"
+                                                    >
+                                                        <Circle className="h-4 w-4 mr-2" /> Mark as Done
+                                                    </Button>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -528,6 +646,68 @@ export default function IntegratedDashboard({
                         </CardHeader>
                         <CardContent>
                             <TodoComponent userId={userId} /> {/* General TodoComponent for all tasks */}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Tab Content for Archived Tasks */}
+                <TabsContent value="archived">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex justify-between items-center">
+                                <CardTitle>Archived Tasks</CardTitle>
+                            </div>
+                            <CardDescription>View and restore your archived tasks.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {archivedTodos.length === 0 ? (
+                                <p className="text-muted-foreground text-center py-8">No archived tasks found.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {archivedTodos.map((todo: any) => (
+                                        <div key={todo._id} className="p-3 rounded-lg border bg-gray-50 dark:bg-gray-900/20">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <CheckCircle2 className="h-5 w-5 text-gray-400" />
+                                                        <div>
+                                                            <div className="font-medium text-gray-600 dark:text-gray-400 line-through">
+                                                                {todo.title}
+                                                            </div>
+                                                            {todo.description && (
+                                                                <div className="text-sm text-gray-500 dark:text-gray-500">
+                                                                    {todo.description}
+                                                                </div>
+                                                            )}
+                                                            {todo.activityId?.title && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                                    Activity: {todo.activityId.title}
+                                                                </div>
+                                                            )}
+                                                            {todo.archivedAt && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-500">
+                                                                    Archived: {format(new Date(todo.archivedAt), 'MMM d, yyyy')}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="text-gray-500">Archived</Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => restoreArchivedTodo(todo._id)}
+                                                        title="Restore task"
+                                                    >
+                                                        <RotateCcw className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

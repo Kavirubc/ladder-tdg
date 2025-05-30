@@ -32,6 +32,8 @@ export interface Todo {
     description?: string;
     activityId: string; // Reference to the parent Activity
     isCompleted: boolean;
+    isArchived?: boolean;
+    archivedAt?: string; // Or Date
     isRepetitive?: boolean;
     lastShown?: string; // Or Date
     user: string;

@@ -21,6 +21,13 @@ const TodoSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isArchived: {
+    type: Boolean,
+    default: false,
+  },
+  archivedAt: {
+    type: Date,
+  },
   isRepetitive: { // New field for repetitive tasks
     type: Boolean,
     default: false,

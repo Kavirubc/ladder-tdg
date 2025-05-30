@@ -191,7 +191,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete a todo
+// DELETE - Archive a todo (soft delete)
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -213,14 +213,16 @@ export async function DELETE(
       return NextResponse.json({ message: 'Todo not found' }, { status: 404 });
     }
 
-    // Delete todo
-    await Todo.deleteOne({ _id: todoId });
+    // Archive todo instead of deleting
+    todo.isArchived = true;
+    todo.archivedAt = new Date();
+    await todo.save();
 
-    return NextResponse.json({ message: 'Todo deleted successfully' }, { status: 200 });
+    return NextResponse.json({ message: 'Todo archived successfully' }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting todo:', error);
+    console.error('Error archiving todo:', error);
     return NextResponse.json(
-      { message: 'An error occurred while deleting todo' },
+      { message: 'An error occurred while archiving todo' },
       { status: 500 }
     );
   }
