@@ -3,7 +3,7 @@
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Loader2 } from 'lucide-react';
+import { LogOut, User, Loader2, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Navbar() {
@@ -43,6 +43,12 @@ export default function Navbar() {
         router.push('/dashboard');
     };
 
+    const handleAdminClick = () => {
+        router.push('/admin/dashboard');
+    };
+
+    const isAdmin = session.user?.email === 'hapuarachchikaviru@gmail.com';
+
     return (
         <nav className='fixed top-2 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center min-w-4xl '>
             <div className="bg-white border-b border-gray-200 w-full max-w-4xl rounded-lg">
@@ -56,6 +62,21 @@ export default function Navbar() {
                             >
                                 Ladder
                             </h1>
+                        </div>
+
+                        {/* Navigation Links */}
+                        <div className="flex items-center space-x-4">
+                            {isAdmin && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleAdminClick}
+                                    className="flex items-center space-x-2"
+                                >
+                                    <Shield className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Admin</span>
+                                </Button>
+                            )}
                         </div>
 
 
