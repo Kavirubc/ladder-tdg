@@ -71,4 +71,5 @@ LadderProgressSchema.pre('save', function (next) {
     next();
 });
 
-export default mongoose.models.LadderProgress || mongoose.model('LadderProgress', LadderProgressSchema);
+const LadderProgress = mongoose.models.LadderProgress || mongoose.model('LadderProgress', LadderProgressSchema);
+export default LadderProgress;

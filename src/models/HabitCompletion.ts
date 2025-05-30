@@ -36,4 +36,5 @@ const HabitCompletionSchema = new mongoose.Schema({
 HabitCompletionSchema.index({ userId: 1, completedAt: -1 });
 HabitCompletionSchema.index({ habitId: 1, completedAt: -1 });
 
-export default mongoose.models.HabitCompletion || mongoose.model('HabitCompletion', HabitCompletionSchema);
+const HabitCompletion = mongoose.models.HabitCompletion || mongoose.model('HabitCompletion', HabitCompletionSchema);
+export default HabitCompletion;

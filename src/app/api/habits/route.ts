@@ -45,6 +45,18 @@ export async function POST(request: NextRequest) {
 
         await connectDB();
 
+        console.log('Creating habit with data:', {
+            title,
+            description,
+            intensity,
+            category,
+            targetFrequency: targetFrequency || 'daily',
+            user: session.user.id,
+        });
+
+        console.log('Habit model:', Habit);
+        console.log('Habit constructor:', typeof Habit);
+
         const habit = new Habit({
             title,
             description,
@@ -68,7 +80,23 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(habit, { status: 201 });
     } catch (error) {
-        console.error('Error creating habit:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error('Error creating habit:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            error: error
+        });
+
+        // Return more specific error message if it's a validation error
+        if (error instanceof Error && error.name === 'ValidationError') {
+            return NextResponse.json({
+                error: 'Validation Error',
+                details: error.message
+            }, { status: 400 });
+        }
+
+        return NextResponse.json({
+            error: 'Internal Server Error',
+            details: error instanceof Error ? error.message : 'Unknown error occurred'
+        }, { status: 500 });
     }
 }

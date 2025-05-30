@@ -208,11 +208,20 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                 form.reset();
             } else {
                 const errorData = await response.json();
-                console.error('Error creating habit:', errorData);
+                console.error('Error creating habit:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorData
+                });
                 // You could add toast notifications here
+                alert(`Failed to create habit: ${errorData.details || errorData.error || 'Unknown error'}`);
             }
         } catch (error) {
-            console.error('Error creating habit:', error);
+            console.error('Error creating habit:', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                error
+            });
+            alert(`Network error creating habit: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsSubmitting(false);
         }

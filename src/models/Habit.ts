@@ -30,7 +30,6 @@ const HabitSchema = new mongoose.Schema({
     },
     pointValue: {
         type: Number,
-        required: true,
         min: 1,
         max: 100,
     },
@@ -54,7 +53,9 @@ const HabitSchema = new mongoose.Schema({
 });
 
 // Middleware to calculate point value based on intensity
-HabitSchema.pre('save', function (next) {
+HabitSchema.pre('validate', function (next) { // Changed from 'save' to 'validate'
+    console.log('Pre-validate middleware running. isNew:', this.isNew, 'isModified(intensity):', this.isModified('intensity'), 'intensity:', this.intensity);
+
     if (this.isNew || this.isModified('intensity')) {
         switch (this.intensity) {
             case 'easy':
@@ -69,9 +70,11 @@ HabitSchema.pre('save', function (next) {
             default:
                 this.pointValue = 10;
         }
+        console.log('Set pointValue to:', this.pointValue);
     }
     this.updatedAt = new Date();
     next();
 });
 
-export default mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
+const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
+export default Habit;
