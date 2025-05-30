@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
 // GET - Get all todos for the current user
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -15,8 +15,16 @@ export async function GET() {
 
     await connectDB();
 
-    // Fetch todos for the current user
-    const todos = await Todo.find({ user: session.user.id }).sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const habitId = searchParams.get('habitId');
+
+    let query: any = { user: session.user.id };
+    if (habitId) {
+      query.habitId = habitId;
+    }
+
+    // Fetch todos for the current user, optionally filtered by habitId
+    const todos = await Todo.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ todos }, { status: 200 });
   } catch (error) {
@@ -38,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body
-    const { title, description } = await req.json();
+    const { title, description, habitId } = await req.json(); // Added habitId
 
     // Validate required fields
     if (!title) {
@@ -51,11 +59,17 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Create new todo
-    const todo = await Todo.create({
+    const todoData: any = {
       title,
       description,
       user: session.user.id,
-    });
+    };
+
+    if (habitId) {
+      todoData.habitId = habitId;
+    }
+
+    const todo = await Todo.create(todoData);
 
     return NextResponse.json({ todo }, { status: 201 });
   } catch (error) {

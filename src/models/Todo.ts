@@ -12,6 +12,11 @@ const TodoSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Description cannot be more than 500 characters'],
   },
+  habitId: { // New field to link Todo to a Habit
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Habit',
+    required: true, // Changed: A todo must be related to a specific habit
+  },
   isCompleted: {
     type: Boolean,
     default: false,

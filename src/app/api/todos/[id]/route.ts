@@ -75,12 +75,12 @@ export async function PUT(
     }
 
     // Parse request body
-    const { title, description, isCompleted } = await req.json(); // Added isCompleted
+    const { title, description, isCompleted, habitId } = await req.json(); // Added habitId
 
     // Validate required fields - only title if not just toggling completion
-    if (title === undefined && description === undefined && isCompleted === undefined) {
+    if (title === undefined && description === undefined && isCompleted === undefined && habitId === undefined) { // Added habitId
       return NextResponse.json(
-        { message: 'At least one field (title, description, or isCompleted) is required for update' },
+        { message: 'At least one field (title, description, isCompleted, or habitId) is required for update' }, // Added habitId
         { status: 400 }
       );
     }
@@ -103,7 +103,7 @@ export async function PUT(
       return NextResponse.json({ message: 'Todo not found' }, { status: 404 });
     }
 
-    // Update todo fields if provided
+    // Update fields if provided
     if (title !== undefined) {
       todo.title = title;
     }
@@ -113,7 +113,11 @@ export async function PUT(
     if (isCompleted !== undefined) {
       todo.isCompleted = isCompleted;
     }
+    if (habitId !== undefined) { // Added habitId update
+      todo.habitId = habitId;
+    }
 
+    // Save updated todo
     await todo.save();
 
     return NextResponse.json({ todo }, { status: 200 });

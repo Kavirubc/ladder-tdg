@@ -67,3 +67,13 @@ export interface LadderRung {
     description: string;
     reward?: string;
 }
+
+export interface Todo {
+    _id: string;
+    title: string;
+    description?: string;
+    isCompleted: boolean;
+    createdAt: string;
+    user: string;
+    habitId: string; // Ensure this is not optional if it's required by the model
+}

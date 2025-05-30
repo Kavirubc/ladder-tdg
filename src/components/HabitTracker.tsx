@@ -43,8 +43,10 @@ import type {
     HabitCompletion,
     LadderProgress,
     HabitCalendarDay,
-    LadderRung
+    LadderRung,
+    Todo // Added Todo type
 } from '@/types/habit';
+import TodoComponent from './TodoComponent'; // Import TodoComponent
 
 // Form schema validation
 const habitFormSchema = z.object({
@@ -78,6 +80,8 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
     const [isAddingHabit, setIsAddingHabit] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [todos, setTodos] = useState<Todo[]>([]); // Added state for todos
+    const [showTodoModalForHabit, setShowTodoModalForHabit] = useState<string | null>(null);
 
     // Initialize form
     const form = useForm<z.infer<typeof habitFormSchema>>({
@@ -100,6 +104,7 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                     fetchHabits(),
                     fetchCompletions(),
                     fetchLadderProgress(),
+                    fetchTodos() // Fetch todos
                 ]);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -175,6 +180,18 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
         }
     };
 
+    const fetchTodos = async () => { // Function to fetch todos
+        try {
+            const response = await fetch('/api/todos');
+            if (response.ok) {
+                const data = await response.json();
+                setTodos(data.todos || []);
+            }
+        } catch (error) {
+            console.error('Error fetching todos:', error);
+        }
+    };
+
     const completeHabit = async (habitId: string) => {
         try {
             const response = await fetch('/api/habits/completions', {
@@ -189,6 +206,26 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
         } catch (error) {
             console.error('Error completing habit:', error);
         }
+    };
+
+    const undoHabitCompletion = async (habitId: string) => {
+        try {
+            const response = await fetch(`/api/habits/completions?habitId=${habitId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                await Promise.all([fetchCompletions(), fetchLadderProgress()]);
+            }
+        } catch (error) {
+            console.error('Error undoing habit completion:', error);
+        }
+    };
+
+    const areAllSubtasksCompleted = (habitId: string) => {
+        const habitTodos = todos.filter(todo => todo.habitId === habitId);
+        if (habitTodos.length === 0) return true; // If no subtasks, consider it complete
+        return habitTodos.every(todo => todo.isCompleted);
     };
 
     const createHabit = async (values: z.infer<typeof habitFormSchema>) => {
@@ -544,29 +581,57 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                                         )}
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Badge variant="secondary">{habit.category}</Badge>
                                                 <Badge variant="outline">{habit.intensity}</Badge>
                                             </div>
-                                            <Button
-                                                onClick={() => completeHabit(habit._id!)}
-                                                disabled={isCompleted}
-                                                variant={isCompleted ? "secondary" : "default"}
-                                                size="sm"
-                                            >
-                                                {isCompleted ? (
-                                                    <>
-                                                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                                                        Done
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Circle className="h-4 w-4 mr-2" />
-                                                        Mark Done
-                                                    </>
-                                                )}
-                                            </Button>
+
+                                            {isCompleted ? (
+                                                <Button
+                                                    onClick={() => undoHabitCompletion(habit._id!)}
+                                                    variant="secondary"
+                                                    size="sm"
+                                                >
+                                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                                    Undo
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    onClick={() => completeHabit(habit._id!)}
+                                                    disabled={!areAllSubtasksCompleted(habit._id!)}
+                                                    variant={!areAllSubtasksCompleted(habit._id!) ? "outline" : "default"}
+                                                    size="sm"
+                                                    title={!areAllSubtasksCompleted(habit._id!) ? "Complete all sub-tasks first" : ""}
+                                                >
+                                                    <Circle className="h-4 w-4 mr-2" />
+                                                    Mark Done
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {/* Display sub-tasks (todos) for this habit */}
+                                        <div className="mt-4 pt-3 border-t border-muted">
+                                            <h4 className="text-sm font-medium mb-2 flex justify-between items-center">
+                                                Sub-Tasks
+                                                <Button variant="ghost" size="sm" onClick={() => setShowTodoModalForHabit(habit._id!)}>
+                                                    <Plus className="h-3 w-3 mr-1" /> Add Task
+                                                </Button>
+                                            </h4>
+                                            {todos.filter(todo => todo.habitId === habit._id).length > 0 ? (
+                                                <ul className="space-y-2">
+                                                    {todos.filter(todo => todo.habitId === habit._id).map(todo => (
+                                                        <li key={todo._id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded-md">
+                                                            <span className={`${todo.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{todo.title}</span>
+                                                            <Badge variant={todo.isCompleted ? "default" : "outline"} className={`${todo.isCompleted ? 'bg-green-500 text-white' : ''}`}>
+                                                                {todo.isCompleted ? 'Done' : 'Pending'}
+                                                            </Badge>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground">No sub-tasks for this habit yet.</p>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -817,6 +882,21 @@ export default function HabitTracker({ userId }: HabitTrackerProps) {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            {/* Todo Modal - Render TodoComponent in a Dialog when showTodoModalForHabit is set */}
+            {showTodoModalForHabit && (
+                <Dialog open={!!showTodoModalForHabit} onOpenChange={() => setShowTodoModalForHabit(null)}>
+                    <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                            <DialogTitle>Manage Tasks for Habit</DialogTitle>
+                            <DialogDescription>
+                                Add, edit, or complete tasks related to this habit.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <TodoComponent userId={userId} habitId={showTodoModalForHabit} isModal={true} />
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }

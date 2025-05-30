@@ -117,6 +117,72 @@ export async function GET(request: NextRequest) {
     }
 }
 
+export async function DELETE(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const habitId = searchParams.get('habitId');
+
+        if (!habitId) {
+            return NextResponse.json({ error: 'Habit ID is required' }, { status: 400 });
+        }
+
+        await connectDB();
+
+        // Find the today's completion to delete
+        const todayStart = startOfDay(new Date());
+        const todayEnd = endOfDay(new Date());
+
+        const completion = await HabitCompletion.findOne({
+            habitId,
+            userId: session.user.id,
+            completedAt: {
+                $gte: todayStart,
+                $lte: todayEnd,
+            }
+        });
+
+        if (!completion) {
+            return NextResponse.json({ error: 'Habit completion not found for today' }, { status: 404 });
+        }
+
+        // Need to update ladder progress first by subtracting the points
+        await updateLadderProgressOnUndo(session.user.id, completion.points);
+
+        // Then delete the completion
+        await HabitCompletion.findByIdAndDelete(completion._id);
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Error undoing habit completion:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+// Function to update ladder progress when undoing a completion
+async function updateLadderProgressOnUndo(userId: string, points: number) {
+    let progress = await LadderProgress.findOne({ userId });
+
+    if (!progress) {
+        return; // Nothing to update
+    }
+
+    // Subtract points
+    progress.totalPoints = Math.max(0, progress.totalPoints - points);
+    progress.weeklyPoints = Math.max(0, progress.weeklyPoints - points);
+
+    // Recalculate level based on total points
+    progress.currentLevel = Math.floor(progress.totalPoints / 100);
+
+    // We don't modify streak counts when undoing - that would be more complex
+
+    await progress.save();
+}
+
 async function calculateStreak(habitId: string, userId: string, currentDate: Date): Promise<number> {
     let streak = 1;
     let checkDate = subDays(currentDate, 1);
