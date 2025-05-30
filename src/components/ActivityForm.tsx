@@ -1,4 +1,3 @@
-// filepath: /Users/kaviruhapuarachchi/Downloads/ladder-tdg/src/components/ActivityForm.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -8,7 +7,11 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import {
     Form,
     FormControl,
@@ -28,7 +31,7 @@ const activityFormSchema = z.object({
     category: z.nativeEnum(ActivityCategory),
     isRecurring: z.boolean().optional(), // Changed from .default(false) to .optional()
     targetFrequency: z.nativeEnum(ActivityFrequency).optional(),
-    deadline: z.string().optional(),
+    deadline: z.date().optional(),
 }).refine(data => {
     const isRecurring = data.isRecurring ?? false; // Handle potentially undefined isRecurring
     if (isRecurring && (!data.targetFrequency || data.targetFrequency === ActivityFrequency.None)) {
@@ -50,7 +53,7 @@ const baseDefaultFormValues: ActivityFormValues = {
     category: ActivityCategory.Other,
     isRecurring: false, // Application-level default
     targetFrequency: undefined, // Remains undefined as Select handles it
-    deadline: '', // Changed from undefined
+    deadline: undefined, // Changed to undefined for Date type
 };
 
 interface ActivityFormProps {
@@ -108,8 +111,8 @@ export default function ActivityForm({
                         ? getFrequencyEnum(initialActivity.targetFrequency)
                         : undefined, // Remains undefined
                     deadline: !currentIsRecurring && initialActivity.deadline
-                        ? initialActivity.deadline.split('T')[0]
-                        : '', // Changed from undefined
+                        ? new Date(initialActivity.deadline)
+                        : undefined, // Changed from undefined
                 });
             } else {
                 form.reset(baseDefaultFormValues);
@@ -145,7 +148,8 @@ export default function ActivityForm({
         }
 
         if (payload.description === '') payload.description = undefined;
-        if (payload.deadline === '') payload.deadline = undefined;
+        if (payload.deadline) payload.deadline = payload.deadline.toISOString();
+        if (!payload.deadline) payload.deadline = undefined;
         // Ensure targetFrequency is not empty string if it was somehow set to it
         if (payload.targetFrequency === '') payload.targetFrequency = undefined;
 
@@ -312,11 +316,36 @@ export default function ActivityForm({
                                 control={form.control}
                                 name="deadline"
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="flex flex-col">
                                         <FormLabel>Deadline (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input type="date" {...field} />
-                                        </FormControl>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant={"outline"}
+                                                        className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                                                    >
+                                                        {field.value ? (
+                                                            format(field.value, "PPP")
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
+                                                    disabled={(date) =>
+                                                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                                                    }
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
                                         <FormDescription>
                                             Set a deadline for one-time goals.
                                         </FormDescription>
