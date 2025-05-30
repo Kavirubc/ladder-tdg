@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     <>
 
       <div className="container mx-auto max-w-6xl py-10 px-4">
-        <h1 className="text-3xl font-bold mb-8">Welcome, {session.user.name}</h1>
+        <h1 className="text-3xl text-center font-bold mb-8">Welcome, {session.user.name}</h1>
 
         <div className="space-y-8">
           <IntegratedDashboard userId={session.user.id} />

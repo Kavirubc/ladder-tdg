@@ -1,0 +1,20 @@
+services:
+  server:
+    build: .
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    command: mongod --port 45636
+    ports:
+      - "45636:45636"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

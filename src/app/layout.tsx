@@ -30,7 +30,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <ThemeProvider>
           <AuthProvider>
-            <Navbar />
+            <nav className="mb-20">
+              <Navbar />
+            </nav>
             {children}
           </AuthProvider>
         </ThemeProvider>
