@@ -6,8 +6,38 @@ A task tracking and productivity app built with Next.js, MongoDB, and NextAuth. 
 
 - **User Authentication**: Secure login and registration with NextAuth
 - **Task Management**: Create, edit, delete, and mark tasks as complete
+- **Activity Tracking**: Create and track recurring activities with point values
+- **Progress System**: Ladder-based progression with levels and achievements
+- **Admin Dashboard**: Comprehensive admin panel for system oversight and management
 - **Dark Mode**: Beautiful dark-themed UI using Shadcn components
 - **Responsive Design**: Works on mobile and desktop
+
+## Admin Features
+
+The application includes a comprehensive admin dashboard accessible only to the administrator (hapuarachchikaviru@gmail.com):
+
+- **System Overview**: View total users, activities, todos, and completions
+- **User Management**: View all users, manage user accounts
+- **Activity Analytics**: See top activities and recent completions across all users
+- **Database Cleanup**: Clean specific collections with password protection
+  - Activities, Todos, Completions, Progress, Users (except admin)
+  - Requires admin password (ADMIN_PASS environment variable)
+- **Real-time Statistics**: Monitor system usage and user engagement
+
+### Admin Access
+
+1. Log in with the admin email: `hapuarachchikaviru@gmail.com`
+2. Click the "Admin" button in the navigation bar
+3. Access the admin dashboard at `/admin/dashboard`
+
+### Database Cleanup
+
+For database cleanup operations:
+
+1. Navigate to the "Database Cleanup" tab
+2. Select the collections you want to clean
+3. Enter the admin password (set in ADMIN_PASS environment variable)
+4. Confirm the operation
 
 ## Tech Stack
 
@@ -36,12 +66,25 @@ A task tracking and productivity app built with Next.js, MongoDB, and NextAuth. 
 3. Create a `.env.local` file based on `.env.local.example` and add your MongoDB URI and NextAuth secret:
 
    ```
+   # Database
+   MONGODB_URI=your_mongodb_connection_string_here
+
    # Auth
-   NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your_nextauth_secret_here # Generate a secure random string
 
-   # MongoDB
-   MONGODB_URI=your_mongodb_connection_string_here
+   # Admin
+   ADMIN_PASS=your_admin_password_here # Password for database cleanup operations
+
+   # OpenAI (optional)
+   OPENAI_API_KEY=your_openai_api_key_here
+
+   # Email (optional)
+   EMAIL_USER=your_email_here
+   EMAIL_APP_PASSWORD=your_email_app_password_here
+
+   # Analytics (optional)
+   NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key_here
+   NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
    ```
 
 4. Start the development server:

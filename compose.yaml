@@ -10,9 +10,9 @@ services:
 
   mongodb:
     image: mongo:latest
-    command: mongod --port 45636
+    command: mongod --port 45633
     ports:
-      - "45636:45636"
+      - "45633:45633"
     volumes:
       - mongodb_data:/data/db
 
