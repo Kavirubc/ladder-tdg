@@ -56,31 +56,7 @@ export default function Navbar() {
                         </h1>
                     </div>
 
-                    {/* Navigation Links */}
-                    <div className="flex items-center space-x-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/dashboard')}
-                            className={`${pathname === '/dashboard'
-                                    ? 'font-semibold text-primary'
-                                    : 'text-gray-600'
-                                }`}
-                        >
-                            Dashboard
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/tasks')}
-                            className={`${pathname === '/tasks'
-                                    ? 'font-semibold text-primary'
-                                    : 'text-gray-600'
-                                }`}
-                        >
-                            Tasks
-                        </Button>
-                    </div>
+                   
 
                     {/* User info and logout */}
                     <div className="flex items-center space-x-4">
