@@ -21,7 +21,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-semibold text-gray-900">Todo App</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Ladder</h1>
           </div>
 
           {/* User info and logout */}
