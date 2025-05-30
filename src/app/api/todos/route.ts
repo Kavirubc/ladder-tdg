@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const goalId = searchParams.get('goalId');
+    const activityId = searchParams.get('activityId'); // Changed from goalId
 
     // Reset repetitive todos if they weren't shown yet today
     const today = startOfDay(new Date());
@@ -34,11 +34,11 @@ export async function GET(req: NextRequest) {
     );
 
     let query: any = { user: session.user.id };
-    if (goalId) {
-      query.goalId = goalId;
+    if (activityId) { // Changed from goalId
+      query.activityId = activityId; // Changed from goalId
     }
 
-    // Fetch todos for the current user, optionally filtered by goalId
+    // Fetch todos for the current user, optionally filtered by activityId
     const todos = await Todo.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ todos }, { status: 200 });
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body
-    const { title, description, goalId, isRepetitive } = await req.json();
+    const { title, description, activityId, isRepetitive } = await req.json(); // Changed from goalId
 
     // Validate required fields
     if (!title) {
@@ -71,9 +71,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!goalId) {
+    if (!activityId) { // Changed from goalId
       return NextResponse.json(
-        { message: 'Goal ID is required' },
+        { message: 'Activity ID is required' }, // Changed from Goal ID
         { status: 400 }
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const todoData: any = {
       title,
       description,
-      goalId,
+      activityId, // Changed from goalId
       user: session.user.id,
       isRepetitive: isRepetitive || false,
       lastShown: new Date()

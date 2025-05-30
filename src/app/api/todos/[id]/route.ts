@@ -75,13 +75,13 @@ export async function PUT(
     }
 
     // Parse request body
-    const { title, description, isCompleted, goalId, isRepetitive } = await req.json();
+    const { title, description, isCompleted, activityId, isRepetitive } = await req.json(); // Changed from goalId
 
     // Validate required fields - only title if not just toggling completion
     if (title === undefined && description === undefined && isCompleted === undefined &&
-      goalId === undefined && isRepetitive === undefined) {
+      activityId === undefined && isRepetitive === undefined) { // Changed from goalId
       return NextResponse.json(
-        { message: 'At least one field (title, description, isCompleted, goalId, or isRepetitive) is required for update' },
+        { message: 'At least one field (title, description, isCompleted, activityId, or isRepetitive) is required for update' }, // Changed from goalId
         { status: 400 }
       );
     }
@@ -118,8 +118,8 @@ export async function PUT(
         todo.lastShown = new Date();
       }
     }
-    if (goalId !== undefined) {
-      todo.goalId = goalId;
+    if (activityId !== undefined) { // Changed from goalId
+      todo.activityId = activityId; // Changed from goalId
     }
     if (isRepetitive !== undefined) {
       todo.isRepetitive = isRepetitive;

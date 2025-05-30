@@ -67,6 +67,9 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
         case 'SET':
           return action.todos;
         case 'ADD':
+          // Check if todo already exists to prevent duplicates
+          const exists = state.some(todo => todo._id === action.todo._id);
+          if (exists) return state;
           return [...state, action.todo];
         case 'UPDATE':
           return state.map(todo =>
@@ -171,18 +174,23 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
       }
 
       const { todo: savedTodo } = await response.json();
-      setTodos(prevTodos => [...prevTodos.filter(t => t._id !== optimisticTodo._id), savedTodo]);
+
+      // Update both actual state and optimistic state
+      setTodos(prevTodos => {
+        const filteredTodos = prevTodos.filter(t => t._id !== optimisticTodo._id);
+        return [...filteredTodos, savedTodo];
+      });
+
       startTransition(() => {
-        // Refresh optimistic state with server confirmed data
-        setTodos(currentTodos => [...currentTodos.filter(t => t._id !== optimisticTodo._id), savedTodo]);
-        updateOptimisticTodos({ type: 'SET', todos: [...todos.filter(t => t._id !== optimisticTodo._id), savedTodo] });
+        updateOptimisticTodos({ type: 'UPDATE', todo: { ...optimisticTodo, ...savedTodo } });
       });
       form.reset();
     } catch (error) {
       console.error('Error adding todo:', error);
+      // Remove the optimistic todo and revert state
       setTodos(prevTodos => prevTodos.filter(t => t._id !== optimisticTodo._id));
       startTransition(() => {
-        updateOptimisticTodos({ type: 'SET', todos }); // Revert to original todos state
+        updateOptimisticTodos({ type: 'DELETE', id: optimisticTodo._id });
       });
     } finally {
       setPendingActions(prev => {
@@ -381,8 +389,8 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
       )}
 
       <div className="space-y-4">
-        {todosToDisplay.map(todo => (
-          <Card key={todo._id} className={`transition-all duration-300 ease-in-out ${pendingActions.has(todo._id) ? 'opacity-50' : 'opacity-100'} ${todo.isCompleted ? 'bg-green-50 dark:bg-green-900/30' : 'bg-white dark:bg-slate-900'}`}>
+        {todosToDisplay.map((todo, index) => (
+          <Card key={`${todo._id}-${index}`} className={`transition-all duration-300 ease-in-out ${pendingActions.has(todo._id) ? 'opacity-50' : 'opacity-100'} ${todo.isCompleted ? 'bg-green-50 dark:bg-green-900/30' : 'bg-white dark:bg-slate-900'}`}>
             <CardContent className="p-4 flex items-start justify-between">
               <div className="flex items-start space-x-3">
                 <Checkbox
