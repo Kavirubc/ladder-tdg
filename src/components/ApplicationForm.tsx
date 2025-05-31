@@ -149,21 +149,31 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
         }
     }, [formData.status]);
 
+    // Load all applications and pick the latest draft or let user select
     const loadExistingApplication = async () => {
         setLoading(true);
         try {
             const response = await fetch('/api/applications');
             if (response.ok) {
                 const data = await response.json();
-                if (data.application) {
-                    // Ensure commitmentRequirements is initialized if not present
-                    const appData = {
-                        ...data.application,
-                        commitmentRequirements: data.application.commitmentRequirements || initialFormData.commitmentRequirements
-                    };
-                    setFormData(appData);
+                // If multiple applications, pick the latest draft (or latest application)
+                let appData = null;
+                if (Array.isArray(data.applications)) {
+                    // Prefer latest draft, else latest submitted
+                    appData = data.applications.find((a: any) => a.status === 'draft')
+                        || data.applications[0];
+                } else if (data.application) {
+                    appData = data.application;
+                }
+                if (appData) {
+                    setFormData({
+                        ...initialFormData,
+                        ...appData,
+                        commitmentRequirements: appData.commitmentRequirements || initialFormData.commitmentRequirements,
+                        name: appData.name || session.user?.name || '',
+                        email: appData.email || session.user?.email || '',
+                    });
                 } else {
-                    // If no existing application, ensure date is current
                     setFormData(prev => ({ ...prev, submissionDate: new Date().toISOString() }));
                 }
             } else {
@@ -198,59 +208,87 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
     };
 
     const validateForm = (): boolean => {
-        if (!formData.phone.trim()) { setMessage({ type: 'error', text: 'Phone number is required.' }); return false; }
-        if (!formData.currentLocation.trim()) { setMessage({ type: 'error', text: 'Current location is required.' }); return false; }
+        // Helper to check if a string is empty or only whitespace
+        const isEmpty = (val?: string) => !val || val.trim() === '';
+
+        if (isEmpty(formData.phone)) { setMessage({ type: 'error', text: 'Phone number is required.' }); return false; }
+        if (isEmpty(formData.currentLocation)) { setMessage({ type: 'error', text: 'Current location is required.' }); return false; }
         if (!formData.commitmentAttendance) { setMessage({ type: 'error', text: 'Please answer the commitment question.' }); return false; }
         if (!formData.preferredMonth) { setMessage({ type: 'error', text: 'Please select your preferred month.' }); return false; }
         if (!formData.weekendAvailability) { setMessage({ type: 'error', text: 'Please indicate your weekend availability.' }); return false; }
-        if (!formData.mainProjectGoal.trim()) { setMessage({ type: 'error', text: 'Main project/goal is required.' }); return false; }
+        if (isEmpty(formData.mainProjectGoal)) { setMessage({ type: 'error', text: 'Main project/goal is required.' }); return false; }
         if (!formData.projectType) { setMessage({ type: 'error', text: 'Please select your project type.' }); return false; }
-        if (formData.projectType === 'other' && !formData.projectTypeOther?.trim()) { setMessage({ type: 'error', text: 'Please specify your project type if other.' }); return false; }
-        if (!formData.projectChallenges.trim()) { setMessage({ type: 'error', text: 'Project challenges are required.' }); return false; }
-        if (!formData.goalByDecember.trim()) { setMessage({ type: 'error', text: 'Goal by December is required.' }); return false; }
-        if (!formData.measureSuccess.trim()) { setMessage({ type: 'error', text: 'How you measure success is required.' }); return false; }
+        if (formData.projectType === 'other' && isEmpty(formData.projectTypeOther)) { setMessage({ type: 'error', text: 'Please specify your project type if other.' }); return false; }
+        if (isEmpty(formData.projectChallenges)) { setMessage({ type: 'error', text: 'Project challenges are required.' }); return false; }
+        if (isEmpty(formData.goalByDecember)) { setMessage({ type: 'error', text: 'Goal by December is required.' }); return false; }
+        if (isEmpty(formData.measureSuccess)) { setMessage({ type: 'error', text: 'How you measure success is required.' }); return false; }
         if (!formData.previousParticipation) { setMessage({ type: 'error', text: 'Please answer about previous participation.' }); return false; }
-        if ((formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'both') && !formData.previousParticipationReason?.trim()) {
+        if ((formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'both') && isEmpty(formData.previousParticipationReason)) {
             setMessage({ type: 'error', text: 'Please explain why you couldn\'t complete previous sessions.' }); return false;
         }
         if (!formData.projectStage) { setMessage({ type: 'error', text: 'Please select your project stage.' }); return false; }
         if (!formData.commitmentUnderstanding) { setMessage({ type: 'error', text: 'Please confirm your understanding of commitments.' }); return false; }
-        if (!Object.values(formData.commitmentRequirements).every(Boolean) && formData.commitmentUnderstanding === 'yes_all') {
+        // Only require all checkboxes if user says they understand all requirements
+        if (formData.commitmentUnderstanding === 'yes_all' && !Object.values(formData.commitmentRequirements).every(Boolean)) {
             setMessage({ type: 'error', text: 'Please check all commitment requirements if you understand them.' });
-            // return false; // Commenting out as per UX, allow submission even if not all checked initially
+            return false;
         }
-        if (!formData.motivation.trim()) { setMessage({ type: 'error', text: 'Motivation is required.' }); return false; }
-        if (!formData.ensureCompletion.trim()) { setMessage({ type: 'error', text: 'How you will ensure completion is required.' }); return false; }
-        if (!formData.digitalSignature.trim()) { setMessage({ type: 'error', text: 'Digital signature is required.' }); return false; }
-        if (formData.digitalSignature.toLowerCase() !== formData.name.toLowerCase()) {
-            setMessage({ type: 'error', text: 'Digital signature must match your full name.' }); return false;
+        if (isEmpty(formData.motivation)) { setMessage({ type: 'error', text: 'Motivation is required.' }); return false; }
+        if (isEmpty(formData.ensureCompletion)) { setMessage({ type: 'error', text: 'How you will ensure completion is required.' }); return false; }
+        if (isEmpty(formData.digitalSignature)) { setMessage({ type: 'error', text: 'Digital signature is required.' }); return false; }
+        // Compare names after trimming and normalizing whitespace/case
+        const normalize = (str: string) => str.trim().replace(/\s+/g, ' ').toLowerCase();
+        // Allow digital signature if it contains the account name (not just equals)
+        if (!normalize(formData.digitalSignature).includes(normalize(formData.name))) {
+            setMessage({ type: 'error', text: `Digital signature must include your account name: "${formData.name}" (case and extra spaces ignored).` }); return false;
         }
         return true;
+    };
+
+    // Helper to clean formData before sending to backend
+    const cleanFormData = (data: any) => {
+        // Remove any _id from commitmentRequirements
+        const cleanedCommitmentRequirements = { ...data.commitmentRequirements };
+        if ('_id' in cleanedCommitmentRequirements) delete cleanedCommitmentRequirements._id;
+        // Remove system fields from root
+        const cleaned = { ...data };
+        delete cleaned._id;
+        delete cleaned.__v;
+        delete cleaned.createdAt;
+        delete cleaned.updatedAt;
+        delete cleaned.statusHistory;
+        delete cleaned.userId;
+        return {
+            ...cleaned,
+            commitmentRequirements: cleanedCommitmentRequirements
+        };
     };
 
     const handleSaveDraft = async () => {
         setSaving(true);
         setMessage(null);
         try {
-            const method = formData.id ? 'PUT' : 'POST';
-            console.log('Save Draft - Method:', method, 'FormData.id:', formData.id);
-
-            const response = await fetch('/api/applications', {
+            const isUpdate = !!formData.id;
+            const method = isUpdate ? 'PUT' : 'POST';
+            const cleaned = cleanFormData({ ...formData, status: 'draft', submissionDate: new Date().toISOString() });
+            let url = '/api/applications';
+            if (isUpdate) {
+                url = `/api/applications/${formData.id}`;
+                delete cleaned.id;
+            }
+            const response = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, status: 'draft', submissionDate: new Date().toISOString() }),
+                body: JSON.stringify(cleaned),
             });
             const data = await response.json();
-            console.log('Save Draft Response:', response.status, data);
-
             if (response.ok) {
-                setFormData(prev => ({ ...prev, id: data.application._id, status: 'draft' }));
+                setFormData(prev => ({ ...prev, ...data.application, id: data.application._id, status: 'draft' }));
                 setMessage({ type: 'success', text: 'Draft saved successfully!' });
             } else {
                 setMessage({ type: 'error', text: data.error || 'Failed to save draft' });
             }
         } catch (error) {
-            console.error('Save Draft Error:', error);
             setMessage({ type: 'error', text: 'An error occurred while saving draft' });
         } finally {
             setSaving(false);
@@ -260,29 +298,31 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
-
         setSubmitting(true);
         setMessage(null);
         try {
-            const method = formData.id ? 'PUT' : 'POST';
-            console.log('Submit - Method:', method, 'FormData.id:', formData.id);
-
-            const response = await fetch('/api/applications', {
+            const isUpdate = !!formData.id;
+            const method = isUpdate ? 'PUT' : 'POST';
+            const cleaned = cleanFormData({ ...formData, status: 'submitted', submissionDate: new Date().toISOString() });
+            let url = '/api/applications';
+            if (isUpdate) {
+                url = `/api/applications/${formData.id}`;
+                delete cleaned.id;
+            }
+            // Remove submittedAt from payload (let backend set it)
+            const response = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, status: 'submitted', submissionDate: new Date().toISOString(), submittedAt: new Date().toISOString() }),
+                body: JSON.stringify(cleaned),
             });
             const data = await response.json();
-            console.log('Submit Response:', response.status, data);
-
             if (response.ok) {
-                setFormData(prev => ({ ...prev, id: data.application._id, status: 'submitted' }));
+                setFormData(prev => ({ ...prev, ...data.application, id: data.application._id, status: 'submitted' }));
                 setMessage({ type: 'success', text: 'Application submitted successfully!' });
             } else {
                 setMessage({ type: 'error', text: data.error || 'Failed to submit application' });
             }
         } catch (error) {
-            console.error('Submit Error:', error);
             setMessage({ type: 'error', text: 'An error occurred while submitting' });
         } finally {
             setSubmitting(false);
@@ -605,6 +645,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                                     <div className="space-y-2">
                                         <Label htmlFor="digitalSignature">Digital Signature (Type your full name) *</Label>
                                         <Input id="digitalSignature" name="digitalSignature" placeholder="Your Full Name" value={formData.digitalSignature} onChange={handleChange} disabled={isReadOnly} required />
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Please type your account name: <strong>{formData.name}</strong></p>
                                     </div>
                                     <div className="space-y-2">
                                         <Input id="submissionDate" type="date" value={(typeof formData.submissionDate === 'string' && formData.submissionDate) ? formData.submissionDate.split('T')[0] : ''} disabled className="bg-gray-100 dark:bg-gray-700" />
