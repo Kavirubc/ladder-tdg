@@ -394,20 +394,18 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                             <DialogTitle>Congratulations!</DialogTitle>
                         </div>
                         <DialogDescription className="text-left space-y-3">
-                            <p>
+                            <div>
                                 Your application to the Ladder program has been <strong>approved</strong>!
                                 We're excited to have you join our community.
-                            </p>
-                            <p>
-                                You'll receive further instructions and program details via email shortly.
-                                Welcome to Ladder!
-                            </p>
+                            </div>
+                            <div>
+                                You can now access exclusive resources and start your journey with us.
+                                Check your email for more details and next steps.
+                            </div>
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex justify-end mt-4">
-                        <Button onClick={() => setShowSuccessModal(false)}>
-                            Thank You!
-                        </Button>
+                    <div className="mt-4 flex justify-end">
+                        <Button onClick={() => setShowSuccessModal(false)}>Close</Button>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -423,24 +421,22 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                             <DialogTitle>Application Update</DialogTitle>
                         </div>
                         <DialogDescription className="text-left space-y-3">
-                            <p>
-                                Thank you for your interest in the Ladder program. Unfortunately,
-                                we're unable to approve your application at this time.
-                            </p>
+                            <div>
+                                We regret to inform you that your application to the Ladder program was not approved at this time.
+                            </div>
                             {formData.rejectionReason && (
                                 <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                                    <p className="text-sm"><strong>Feedback:</strong> {formData.rejectionReason}</p>
+                                    <p className="text-sm font-medium text-red-700">Reason for decision:</p>
+                                    <p className="text-sm text-red-600">{formData.rejectionReason}</p>
                                 </div>
                             )}
-                            <p className="text-sm">
-                                We encourage you to apply again in the future as our programs evolve.
-                            </p>
+                            <div>
+                                We encourage you to apply again in the future. Thank you for your interest.
+                            </div>
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex justify-end mt-4">
-                        <Button onClick={() => setShowRejectionModal(false)}>
-                            I Understand
-                        </Button>
+                    <div className="mt-4 flex justify-end">
+                        <Button variant="outline" onClick={() => setShowRejectionModal(false)}>Close</Button>
                     </div>
                 </DialogContent>
             </Dialog>

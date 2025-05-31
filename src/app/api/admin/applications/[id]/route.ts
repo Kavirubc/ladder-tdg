@@ -7,23 +7,23 @@ import Application from '@/models/Application';
 // PUT - Update application status (Admin only)
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params: paramsPromise }: { params: { id: string } }
 ) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.email !== 'hapuarachchikaviru@gmail.com') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await connectDB();
+    const params = await paramsPromise; // Await params here
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || session.user.email !== 'hapuarachchikaviru@gmail.com') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
         const body = await request.json();
         const { status, comment } = body;
 
         if (!['draft', 'submitted', 'reviewed', 'accepted', 'rejected'].includes(status)) {
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
         }
-
-        await connectDB();
 
         // Get current application to preserve status history
         const currentApplication = await Application.findById(params.id);
