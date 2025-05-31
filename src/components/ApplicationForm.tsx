@@ -659,7 +659,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                             {/* Action Buttons */}
                             {!isReadOnly && (
                                 <div className="flex flex-col sm:flex-row gap-3 pt-6">
-                                    <Button
+                                    {/* <Button
                                         type="button"
                                         variant="outline"
                                         onClick={handleSaveDraft}
@@ -669,7 +669,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                                         {saving ? (
                                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving Draft...</>
                                         ) : 'Save Draft'}
-                                    </Button>
+                                    </Button> */}
                                     <Button
                                         type="submit"
                                         disabled={saving || submitting}

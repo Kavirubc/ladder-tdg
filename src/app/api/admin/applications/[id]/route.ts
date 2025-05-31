@@ -7,7 +7,7 @@ import Application from '@/models/Application';
 // PUT - Update application status (Admin only)
 export async function PUT(
     request: NextRequest,
-    { params: paramsPromise }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await getServerSession(authOptions);
 
@@ -16,7 +16,7 @@ export async function PUT(
     }
 
     await connectDB();
-    const params = await paramsPromise; // Await params here
+    const { id } = await params; // Await params here
     try {
         const body = await request.json();
         const { status, comment } = body;
@@ -26,7 +26,7 @@ export async function PUT(
         }
 
         // Get current application to preserve status history
-        const currentApplication = await Application.findById(params.id);
+        const currentApplication = await Application.findById(id);
         if (!currentApplication) {
             return NextResponse.json({ error: 'Application not found' }, { status: 404 });
         }
@@ -55,7 +55,7 @@ export async function PUT(
         };
 
         const application = await Application.findByIdAndUpdate(
-            params.id,
+            id,
             updateData,
             { new: true, runValidators: true }
         );
