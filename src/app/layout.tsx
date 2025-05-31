@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import AuthProvider from "@/providers/AuthProvider";
 import Navbar from "@/components/Navbar";
+import { PostHogProvider } from "./PostHogProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +31,12 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <ThemeProvider>
           <AuthProvider>
-            <nav className="mb-20">
-              <Navbar />
-            </nav>
-            {children}
+            <PostHogProvider>
+              <nav className="mb-20">
+                <Navbar />
+              </nav>
+              {children}
+            </PostHogProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

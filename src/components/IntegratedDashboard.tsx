@@ -217,7 +217,7 @@ export default function IntegratedDashboard({
                     </div>
                     <div className="flex items-center gap-2">
                         <Badge variant="outline">{activity.pointValue} pts</Badge>
-                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
+                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
                             <ListChecks className="h-4 w-4" />
                         </Button>
                         <Button
@@ -225,6 +225,7 @@ export default function IntegratedDashboard({
                             disabled={isCompletedToday}
                             variant={isCompletedToday ? "secondary" : "default"}
                             size="sm"
+                            data-ph-event="integrated_dashboard_action"
                         >
                             {isCompletedToday ? (
                                 <CheckCircle2 className="h-4 w-4" />
@@ -304,7 +305,7 @@ export default function IntegratedDashboard({
                                     <CardTitle className="text-lg">Today&apos;s Activities</CardTitle>
                                     <CardDescription>Focus on your habits and goals for today</CardDescription>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => openActivityForm()}>
+                                <Button variant="outline" size="sm" onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Activity
                                 </Button>
@@ -362,7 +363,7 @@ export default function IntegratedDashboard({
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
+                                                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
                                                             <ListChecks className="h-4 w-4" />
                                                         </Button>
                                                         {isCompletedToday ? (
@@ -379,6 +380,7 @@ export default function IntegratedDashboard({
                                                                     size="sm"
                                                                     onClick={() => undoActivityCompletion(activity._id!)}
                                                                     title="Undo completion"
+                                                                    data-ph-event="integrated_dashboard_action"
                                                                 >
                                                                     <RotateCcw className="h-4 w-4" />
                                                                 </Button>
@@ -388,6 +390,7 @@ export default function IntegratedDashboard({
                                                                 onClick={() => completeActivity(activity._id!)}
                                                                 variant="default"
                                                                 size="sm"
+                                                                data-ph-event="integrated_dashboard_action"
                                                             >
                                                                 <Circle className="h-4 w-4" />
                                                             </Button>
@@ -409,7 +412,7 @@ export default function IntegratedDashboard({
                                     <CardDescription>Manage your to-do items for today</CardDescription>
                                 </div>
                                 {/* This button can still open the modal for a quick add if desired, or be removed if all task additions go via /tasks page */}
-                                <Button variant="outline" size="sm" onClick={() => openTodoModal()}>
+                                <Button variant="outline" size="sm" onClick={() => openTodoModal()} data-ph-event="integrated_dashboard_action">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Quick Add Task
                                 </Button>
@@ -431,6 +434,7 @@ export default function IntegratedDashboard({
                                                             size="sm"
                                                             onClick={() => toggleTodo(todo._id, todo.isCompleted)}
                                                             className="p-0 h-auto"
+                                                            data-ph-event="integrated_dashboard_action"
                                                         >
                                                             <Circle className="h-5 w-5" />
                                                         </Button>
@@ -456,6 +460,7 @@ export default function IntegratedDashboard({
                                                             size="sm"
                                                             onClick={() => toggleTodo(todo._id, todo.isCompleted)}
                                                             className="p-0 h-auto"
+                                                            data-ph-event="integrated_dashboard_action"
                                                         >
                                                             <CheckCircle2 className="h-5 w-5 text-green-600" />
                                                         </Button>
@@ -490,7 +495,7 @@ export default function IntegratedDashboard({
                 <TabsContent value="recurring" className="space-y-4">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-xl font-semibold">All Recurring Activities</h3>
-                        <Button onClick={() => openActivityForm()}><Plus className="h-4 w-4 mr-2" /> Add Recurring Activity</Button>
+                        <Button onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action"><Plus className="h-4 w-4 mr-2" /> Add Recurring Activity</Button>
                     </div>
                     {recurringActivities.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">No recurring activities defined yet.</p>
@@ -516,10 +521,10 @@ export default function IntegratedDashboard({
                                             </div>
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
+                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)} data-ph-event="integrated_dashboard_action">
                                                     Edit
                                                 </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
+                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
                                                     <ListChecks className="h-4 w-4 mr-1" /> Tasks
                                                 </Button>
                                                 {isCompletedToday ? (
@@ -536,6 +541,7 @@ export default function IntegratedDashboard({
                                                             size="sm"
                                                             onClick={() => undoActivityCompletion(activity._id!)}
                                                             title="Undo completion"
+                                                            data-ph-event="integrated_dashboard_action"
                                                         >
                                                             <RotateCcw className="h-4 w-4" />
                                                         </Button>
@@ -545,6 +551,7 @@ export default function IntegratedDashboard({
                                                         onClick={() => completeActivity(activity._id!)}
                                                         variant="default"
                                                         size="sm"
+                                                        data-ph-event="integrated_dashboard_action"
                                                     >
                                                         <Circle className="h-4 w-4 mr-2" /> Mark Done
                                                     </Button>
@@ -562,7 +569,7 @@ export default function IntegratedDashboard({
                 <TabsContent value="goals" className="space-y-4">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-xl font-semibold">One-Time Goals</h3>
-                        <Button onClick={() => openActivityForm()}><Plus className="h-4 w-4 mr-2" /> Add Goal</Button>
+                        <Button onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action"><Plus className="h-4 w-4 mr-2" /> Add Goal</Button>
                     </div>
                     {oneTimeActivities.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">No one-time goals defined yet.</p>
@@ -593,10 +600,10 @@ export default function IntegratedDashboard({
                                             </div>
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)}>
+                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)} data-ph-event="integrated_dashboard_action">
                                                     Edit
                                                 </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks">
+                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
                                                     <ListChecks className="h-4 w-4 mr-1" /> Tasks
                                                 </Button>
                                                 {isCompleted ? (
@@ -613,6 +620,7 @@ export default function IntegratedDashboard({
                                                             size="sm"
                                                             onClick={() => undoActivityCompletion(activity._id!)}
                                                             title="Undo completion"
+                                                            data-ph-event="integrated_dashboard_action"
                                                         >
                                                             <RotateCcw className="h-4 w-4" />
                                                         </Button>
@@ -622,6 +630,7 @@ export default function IntegratedDashboard({
                                                         onClick={() => completeActivity(activity._id!)}
                                                         variant="default"
                                                         size="sm"
+                                                        data-ph-event="integrated_dashboard_action"
                                                     >
                                                         <Circle className="h-4 w-4 mr-2" /> Mark as Done
                                                     </Button>
@@ -699,6 +708,7 @@ export default function IntegratedDashboard({
                                                         size="sm"
                                                         onClick={() => restoreArchivedTodo(todo._id)}
                                                         title="Restore task"
+                                                        data-ph-event="integrated_dashboard_action"
                                                     >
                                                         <RotateCcw className="h-4 w-4" />
                                                     </Button>

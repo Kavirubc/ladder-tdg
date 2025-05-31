@@ -369,15 +369,17 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
       {!isModal && (
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">My Tasks</h1>
-          <Button onClick={() => {
-            if (!activityId && !isModal) {
-              alert("To add a new task here, please ensure an activity context is available or use the 'Add Task' button within a specific activity.");
-              return;
-            }
-            setEditingTodo(null);
-            form.reset({ title: '', description: '' });
-            setDialogOpen(true);
-          }}>Add New Task</Button>
+          <Button
+            data-ph-event="todo_action"
+            onClick={() => {
+              if (!activityId && !isModal) {
+                alert("To add a new task here, please ensure an activity context is available or use the 'Add Task' button within a specific activity.");
+                return;
+              }
+              setEditingTodo(null);
+              form.reset({ title: '', description: '' });
+              setDialogOpen(true);
+            }}>Add New Task</Button>
         </div>
       )}
 
@@ -416,10 +418,14 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
                 </div>
               </div>
               <div className="flex space-x-2 items-center">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(todo)} aria-label="Edit task">
+                <Button
+                  data-ph-event="todo_action"
+                  variant="ghost" size="icon" onClick={() => handleEdit(todo)} aria-label="Edit task">
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => archiveTodo(todo._id)} aria-label="Archive task">
+                <Button
+                  data-ph-event="todo_action"
+                  variant="ghost" size="icon" onClick={() => archiveTodo(todo._id)} aria-label="Archive task">
                   <Archive className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -477,7 +483,9 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={(!activityId && !editingTodo) || pendingActions.size > 0 || form.formState.isSubmitting}>
+              <Button
+                data-ph-event="todo_action"
+                type="submit" disabled={(!activityId && !editingTodo) || pendingActions.size > 0 || form.formState.isSubmitting}>
                 {pendingActions.size > 0 || form.formState.isSubmitting ? 'Saving...' : (editingTodo ? 'Save Changes' : 'Add Task')}
               </Button>
             </form>

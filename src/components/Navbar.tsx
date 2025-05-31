@@ -67,7 +67,7 @@ export default function Navbar() {
                         {/* Navigation Links */}
                         <div className="flex items-center space-x-4">
                             {/* Apply Link for regular users */}
-                            
+
 
                             {/* Admin Links */}
                             {isAdmin && (
@@ -77,6 +77,7 @@ export default function Navbar() {
                                         size="sm"
                                         onClick={handleAdminClick}
                                         className="flex items-center space-x-2"
+                                        data-ph-event="navbar_action"
                                     >
                                         <Shield className="h-4 w-4" />
                                         <span className="hidden sm:inline">Dashboard</span>
@@ -86,6 +87,7 @@ export default function Navbar() {
                                         size="sm"
                                         onClick={() => router.push('/admin/applications')}
                                         className="flex items-center space-x-2"
+                                        data-ph-event="navbar_action"
                                     >
                                         <span className="hidden sm:inline">Applications</span>
                                         <span className="sm:hidden">Apps</span>
@@ -111,6 +113,7 @@ export default function Navbar() {
                                 onClick={handleLogout}
                                 disabled={isLoggingOut}
                                 className="flex items-center space-x-2"
+                                data-ph-event="navbar_action"
                             >
                                 {isLoggingOut ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -312,6 +312,7 @@ export default function AdminDashboard() {
                                                         variant="destructive"
                                                         size="sm"
                                                         onClick={() => handleDeleteUser(user._id)}
+                                                        data-ph-event="admin_dashboard_action"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -480,6 +481,7 @@ export default function AdminDashboard() {
                                     disabled={isCleaningUp || !cleanupPassword || selectedCollections.length === 0}
                                     variant="destructive"
                                     className="w-full max-w-md"
+                                    data-ph-event="admin_dashboard_action"
                                 >
                                     {isCleaningUp ? 'Cleaning Database...' : 'Clean Selected Collections'}
                                 </Button>

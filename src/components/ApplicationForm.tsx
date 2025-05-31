@@ -674,6 +674,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                                         type="submit"
                                         disabled={saving || submitting}
                                         className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                                        data-ph-event="application_form_action"
                                     >
                                         {submitting ? (
                                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting Application...</>
