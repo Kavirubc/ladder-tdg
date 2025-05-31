@@ -10,12 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-    Users, 
-    FileText, 
-    Clock, 
-    CheckCircle, 
-    XCircle, 
+import {
+    Users,
+    FileText,
+    Clock,
+    CheckCircle,
+    XCircle,
     Eye,
     Loader2,
     TrendingUp,
@@ -108,7 +108,7 @@ export default function ApplicationsAnalytics() {
             if (applicationsRes.ok && analyticsRes.ok) {
                 const applicationsData = await applicationsRes.json();
                 const analyticsData = await analyticsRes.json();
-                
+
                 setApplications(applicationsData.applications);
                 setAnalytics(analyticsData);
             } else {
@@ -151,7 +151,7 @@ export default function ApplicationsAnalytics() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     status: statusUpdateData.newStatus,
                     comment: statusUpdateData.comment
                 }),
@@ -321,24 +321,23 @@ export default function ApplicationsAnalytics() {
                                         <TableCell className="text-sm">{application.currentLocation || 'Not provided'}</TableCell>
                                         <TableCell className="text-sm">
                                             {!application.projectType ? 'Not provided' :
-                                             application.projectType === 'startup' ? 'Startup' :
-                                             application.projectType === 'academic' ? 'Academic' :
-                                             application.projectType === 'personal_dev' ? 'Personal Dev' :
-                                             application.projectType === 'career_transition' ? 'Career' :
-                                             application.projectType === 'creative' ? 'Creative' :
-                                             'Other'}
+                                                application.projectType === 'startup' ? 'Startup' :
+                                                    application.projectType === 'academic' ? 'Academic' :
+                                                        application.projectType === 'personal_dev' ? 'Personal Dev' :
+                                                            application.projectType === 'career_transition' ? 'Career' :
+                                                                application.projectType === 'creative' ? 'Creative' :
+                                                                    'Other'}
                                         </TableCell>
                                         <TableCell>
                                             {!application.commitmentAttendance ? (
                                                 <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">N/A</span>
                                             ) : (
-                                                <span className={`px-2 py-1 rounded text-xs ${
-                                                    application.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
-                                                    application.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
-                                                    'bg-yellow-100 text-yellow-800'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded text-xs ${application.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
+                                                        application.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                    }`}>
                                                     {application.commitmentAttendance === 'yes' ? 'Yes' :
-                                                     application.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
+                                                        application.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
                                                 </span>
                                             )}
                                         </TableCell>
@@ -401,8 +400,8 @@ export default function ApplicationsAnalytics() {
                     <div className="space-y-4">
                         <div>
                             <Label htmlFor="status">New Status</Label>
-                            <Select 
-                                value={statusUpdateData.newStatus} 
+                            <Select
+                                value={statusUpdateData.newStatus}
                                 onValueChange={(value) => setStatusUpdateData(prev => ({ ...prev, newStatus: value }))}
                             >
                                 <SelectTrigger>
@@ -433,7 +432,7 @@ export default function ApplicationsAnalytics() {
                         <Button variant="outline" onClick={() => setShowStatusModal(false)}>
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={updateApplicationStatus}
                             disabled={!statusUpdateData.newStatus || (statusUpdateData.newStatus === 'rejected' && !statusUpdateData.comment.trim())}
                         >
@@ -455,8 +454,8 @@ export default function ApplicationsAnalytics() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {getStatusBadge(selectedApplication.status)}
-                                    <Button 
-                                        variant="ghost" 
+                                    <Button
+                                        variant="ghost"
                                         size="sm"
                                         onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}
                                     >
@@ -492,14 +491,13 @@ export default function ApplicationsAnalytics() {
                                         <h3 className="font-semibold text-lg">Commitment & Availability</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <strong>Can commit to all sessions:</strong> 
-                                                <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                                                    selectedApplication.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
-                                                    selectedApplication.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
-                                                    'bg-yellow-100 text-yellow-800'
-                                                }`}>
+                                                <strong>Can commit to all sessions:</strong>
+                                                <span className={`ml-2 px-2 py-1 rounded text-sm ${selectedApplication.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
+                                                        selectedApplication.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                    }`}>
                                                     {selectedApplication.commitmentAttendance === 'yes' ? 'Yes' :
-                                                     selectedApplication.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
+                                                        selectedApplication.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
                                                 </span>
                                             </div>
                                             {selectedApplication.preferredMonth && (
@@ -511,9 +509,9 @@ export default function ApplicationsAnalytics() {
                                                 <div>
                                                     <strong>Weekend Availability:</strong> {
                                                         selectedApplication.weekendAvailability === 'both' ? 'Both Saturday & Sunday' :
-                                                        selectedApplication.weekendAvailability === 'saturday' ? 'Saturday only' :
-                                                        selectedApplication.weekendAvailability === 'sunday' ? 'Sunday only' :
-                                                        'Not available'
+                                                            selectedApplication.weekendAvailability === 'saturday' ? 'Saturday only' :
+                                                                selectedApplication.weekendAvailability === 'sunday' ? 'Sunday only' :
+                                                                    'Not available'
                                                     }
                                                 </div>
                                             )}
@@ -529,22 +527,22 @@ export default function ApplicationsAnalytics() {
                                     <div>
                                         <strong>Project Type:</strong> {
                                             selectedApplication.projectType === 'startup' ? 'Startup/Business venture' :
-                                            selectedApplication.projectType === 'academic' ? 'University/Academic project' :
-                                            selectedApplication.projectType === 'personal_dev' ? 'Personal development goal' :
-                                            selectedApplication.projectType === 'career_transition' ? 'Career transition' :
-                                            selectedApplication.projectType === 'creative' ? 'Creative project' :
-                                            selectedApplication.projectTypeOther || 'Other'
+                                                selectedApplication.projectType === 'academic' ? 'University/Academic project' :
+                                                    selectedApplication.projectType === 'personal_dev' ? 'Personal development goal' :
+                                                        selectedApplication.projectType === 'career_transition' ? 'Career transition' :
+                                                            selectedApplication.projectType === 'creative' ? 'Creative project' :
+                                                                selectedApplication.projectTypeOther || 'Other'
                                         }
                                     </div>
                                     {selectedApplication.projectStage && (
                                         <div>
                                             <strong>Project Stage:</strong> {
                                                 selectedApplication.projectStage === 'idea' ? 'Just an idea' :
-                                                selectedApplication.projectStage === 'planning' ? 'Planning phase' :
-                                                selectedApplication.projectStage === 'early_dev' ? 'Early development' :
-                                                selectedApplication.projectStage === 'mid_dev' ? 'Mid-development' :
-                                                selectedApplication.projectStage === 'near_completion' ? 'Near completion' :
-                                                'Looking to scale/improve'
+                                                    selectedApplication.projectStage === 'planning' ? 'Planning phase' :
+                                                        selectedApplication.projectStage === 'early_dev' ? 'Early development' :
+                                                            selectedApplication.projectStage === 'mid_dev' ? 'Mid-development' :
+                                                                selectedApplication.projectStage === 'near_completion' ? 'Near completion' :
+                                                                    'Looking to scale/improve'
                                             }
                                         </div>
                                     )}
@@ -598,9 +596,9 @@ export default function ApplicationsAnalytics() {
                                     <div>
                                         <strong>Previous Participation:</strong> {
                                             selectedApplication.previousParticipation === 'season1' ? 'Season 1' :
-                                            selectedApplication.previousParticipation === 'season2' ? 'Season 2' :
-                                            selectedApplication.previousParticipation === 'both' ? 'Both Seasons' :
-                                            'First time'
+                                                selectedApplication.previousParticipation === 'season2' ? 'Season 2' :
+                                                    selectedApplication.previousParticipation === 'both' ? 'Both Seasons' :
+                                                        'First time'
                                         }
                                     </div>
                                     {selectedApplication.previousParticipationReason && (
@@ -620,8 +618,8 @@ export default function ApplicationsAnalytics() {
                                     <h3 className="font-semibold text-lg">Commitment</h3>
                                     <div>
                                         <strong>Understanding:</strong> {
-                                            selectedApplication.commitmentUnderstanding === 'yes_all' ? 
-                                            'Understands ALL requirements' : 'Needs clarification'
+                                            selectedApplication.commitmentUnderstanding === 'yes_all' ?
+                                                'Understands ALL requirements' : 'Needs clarification'
                                         }
                                     </div>
                                     {selectedApplication.commitmentRequirements && (
@@ -702,17 +700,17 @@ export default function ApplicationsAnalytics() {
                             )}
 
                             {/* Legacy field - only show if it has meaningful content and is different from motivation */}
-                            {selectedApplication.whyJoin && 
-                             selectedApplication.whyJoin !== selectedApplication.motivation && 
-                             !selectedApplication.whyJoin.includes('Note:') && 
-                             !selectedApplication.whyJoin.includes('Only submit this form') && (
-                                <div>
-                                    <strong>Legacy - Why they want to join:</strong>
-                                    <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm">
-                                        {selectedApplication.whyJoin}
+                            {selectedApplication.whyJoin &&
+                                selectedApplication.whyJoin !== selectedApplication.motivation &&
+                                !selectedApplication.whyJoin.includes('Note:') &&
+                                !selectedApplication.whyJoin.includes('Only submit this form') && (
+                                    <div>
+                                        <strong>Legacy - Why they want to join:</strong>
+                                        <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm">
+                                            {selectedApplication.whyJoin}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
                             {selectedApplication.status === 'rejected' && selectedApplication.rejectionReason && (
                                 <div>

@@ -4,6 +4,11 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Application from '@/models/Application';
 
+// Helper function to convert empty strings to undefined for enum fields
+function normalizeEnumField(value: string | undefined): string | undefined {
+    return (value && value.trim() !== '') ? value : undefined;
+}
+
 // GET - Fetch user's application
 export async function GET() {
     try {
@@ -34,6 +39,8 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
+        console.log('Received POST body:', JSON.stringify(body, null, 2));
+
         const {
             phone,
             currentLocation,
@@ -136,19 +143,19 @@ export async function POST(request: NextRequest) {
             email: session.user.email,
             phone: phone || '',
             currentLocation: currentLocation || '',
-            commitmentAttendance,
+            commitmentAttendance: normalizeEnumField(commitmentAttendance),
             preferredMonth,
-            weekendAvailability,
+            weekendAvailability: normalizeEnumField(weekendAvailability),
             mainProjectGoal: mainProjectGoal || '',
-            projectType,
+            projectType: normalizeEnumField(projectType),
             projectTypeOther,
             projectChallenges: projectChallenges || '',
             goalByDecember: goalByDecember || '',
             measureSuccess: measureSuccess || '',
-            previousParticipation,
+            previousParticipation: normalizeEnumField(previousParticipation),
             previousParticipationReason,
-            projectStage,
-            commitmentUnderstanding,
+            projectStage: normalizeEnumField(projectStage),
+            commitmentUnderstanding: normalizeEnumField(commitmentUnderstanding),
             commitmentRequirements: commitmentRequirements || {
                 attendingAllSessions: false,
                 participatingExtra: false,
@@ -184,6 +191,8 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
+        console.log('Received PUT body:', JSON.stringify(body, null, 2));
+
         const {
             phone,
             currentLocation,
@@ -277,19 +286,19 @@ export async function PUT(request: NextRequest) {
         const updateData: any = {
             phone: phone || '',
             currentLocation: currentLocation || '',
-            commitmentAttendance,
+            commitmentAttendance: normalizeEnumField(commitmentAttendance),
             preferredMonth,
-            weekendAvailability,
+            weekendAvailability: normalizeEnumField(weekendAvailability),
             mainProjectGoal: mainProjectGoal || '',
-            projectType,
+            projectType: normalizeEnumField(projectType),
             projectTypeOther,
             projectChallenges: projectChallenges || '',
             goalByDecember: goalByDecember || '',
             measureSuccess: measureSuccess || '',
-            previousParticipation,
+            previousParticipation: normalizeEnumField(previousParticipation),
             previousParticipationReason,
-            projectStage,
-            commitmentUnderstanding,
+            projectStage: normalizeEnumField(projectStage),
+            commitmentUnderstanding: normalizeEnumField(commitmentUnderstanding),
             commitmentRequirements: commitmentRequirements || {
                 attendingAllSessions: false,
                 participatingExtra: false,
