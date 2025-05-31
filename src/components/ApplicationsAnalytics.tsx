@@ -28,7 +28,34 @@ interface Application {
     name: string;
     email: string;
     phone: string;
-    whyJoin: string;
+    currentLocation: string;
+    commitmentAttendance: 'yes' | 'no' | 'unsure';
+    preferredMonth: string;
+    weekendAvailability: 'both' | 'saturday' | 'sunday' | 'none';
+    mainProjectGoal: string;
+    projectType: 'startup' | 'academic' | 'personal_dev' | 'career_transition' | 'creative' | 'other';
+    projectTypeOther?: string;
+    projectChallenges: string;
+    goalByDecember: string;
+    measureSuccess: string;
+    previousParticipation: 'season1' | 'season2' | 'both' | 'none';
+    previousParticipationReason?: string;
+    projectStage: 'idea' | 'planning' | 'early_dev' | 'mid_dev' | 'near_completion' | 'scaling';
+    commitmentUnderstanding: 'yes_all' | 'need_clarification';
+    commitmentRequirements: {
+        attendingAllSessions: boolean;
+        participatingExtra: boolean;
+        stayingActive: boolean;
+        attendingInPerson: boolean;
+    };
+    motivation: string;
+    ensureCompletion: string;
+    expertiseSkills?: string;
+    valuableSupport?: string;
+    additionalComments?: string;
+    digitalSignature: string;
+    submissionDate: string;
+    whyJoin?: string; // Legacy field
     status: 'draft' | 'submitted' | 'reviewed' | 'accepted' | 'rejected';
     rejectionReason?: string;
     createdAt: string;
@@ -273,6 +300,9 @@ export default function ApplicationsAnalytics() {
                                 <TableRow>
                                     <TableHead>Applicant</TableHead>
                                     <TableHead>Phone</TableHead>
+                                    <TableHead>Location</TableHead>
+                                    <TableHead>Project Type</TableHead>
+                                    <TableHead>Commitment</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Applied</TableHead>
                                     <TableHead>Actions</TableHead>
@@ -288,6 +318,30 @@ export default function ApplicationsAnalytics() {
                                             </div>
                                         </TableCell>
                                         <TableCell>{application.phone}</TableCell>
+                                        <TableCell className="text-sm">{application.currentLocation || 'Not provided'}</TableCell>
+                                        <TableCell className="text-sm">
+                                            {!application.projectType ? 'Not provided' :
+                                             application.projectType === 'startup' ? 'Startup' :
+                                             application.projectType === 'academic' ? 'Academic' :
+                                             application.projectType === 'personal_dev' ? 'Personal Dev' :
+                                             application.projectType === 'career_transition' ? 'Career' :
+                                             application.projectType === 'creative' ? 'Creative' :
+                                             'Other'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {!application.commitmentAttendance ? (
+                                                <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">N/A</span>
+                                            ) : (
+                                                <span className={`px-2 py-1 rounded text-xs ${
+                                                    application.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
+                                                    application.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {application.commitmentAttendance === 'yes' ? 'Yes' :
+                                                     application.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
+                                                </span>
+                                            )}
+                                        </TableCell>
                                         <TableCell>{getStatusBadge(application.status)}</TableCell>
                                         <TableCell>
                                             {application.submittedAt ? formatDate(application.submittedAt) : 'Not submitted'}
@@ -411,10 +465,14 @@ export default function ApplicationsAnalytics() {
                                 </div>
                             </div>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
+                            {/* Basic Information */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <strong>Phone:</strong> {selectedApplication.phone}
+                                    <strong>Phone:</strong> {selectedApplication.phone || 'Not provided'}
+                                </div>
+                                <div>
+                                    <strong>Location:</strong> {selectedApplication.currentLocation || 'Not provided'}
                                 </div>
                                 <div>
                                     <strong>Applied:</strong> {formatDate(selectedApplication.createdAt)}
@@ -425,13 +483,236 @@ export default function ApplicationsAnalytics() {
                                     </div>
                                 )}
                             </div>
-                            
-                            <div>
-                                <strong>Why they want to join:</strong>
-                                <div className="mt-2 p-4 bg-muted rounded-lg">
-                                    {selectedApplication.whyJoin}
+
+                            {/* Only show new form sections if the application has the new data */}
+                            {selectedApplication.commitmentAttendance && (
+                                <>
+                                    {/* Commitment & Availability */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-lg">Commitment & Availability</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <strong>Can commit to all sessions:</strong> 
+                                                <span className={`ml-2 px-2 py-1 rounded text-sm ${
+                                                    selectedApplication.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
+                                                    selectedApplication.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {selectedApplication.commitmentAttendance === 'yes' ? 'Yes' :
+                                                     selectedApplication.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
+                                                </span>
+                                            </div>
+                                            {selectedApplication.preferredMonth && (
+                                                <div>
+                                                    <strong>Preferred Month:</strong> {selectedApplication.preferredMonth}
+                                                </div>
+                                            )}
+                                            {selectedApplication.weekendAvailability && (
+                                                <div>
+                                                    <strong>Weekend Availability:</strong> {
+                                                        selectedApplication.weekendAvailability === 'both' ? 'Both Saturday & Sunday' :
+                                                        selectedApplication.weekendAvailability === 'saturday' ? 'Saturday only' :
+                                                        selectedApplication.weekendAvailability === 'sunday' ? 'Sunday only' :
+                                                        'Not available'
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Project Information */}
+                            {selectedApplication.projectType && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-lg">Project Information</h3>
+                                    <div>
+                                        <strong>Project Type:</strong> {
+                                            selectedApplication.projectType === 'startup' ? 'Startup/Business venture' :
+                                            selectedApplication.projectType === 'academic' ? 'University/Academic project' :
+                                            selectedApplication.projectType === 'personal_dev' ? 'Personal development goal' :
+                                            selectedApplication.projectType === 'career_transition' ? 'Career transition' :
+                                            selectedApplication.projectType === 'creative' ? 'Creative project' :
+                                            selectedApplication.projectTypeOther || 'Other'
+                                        }
+                                    </div>
+                                    {selectedApplication.projectStage && (
+                                        <div>
+                                            <strong>Project Stage:</strong> {
+                                                selectedApplication.projectStage === 'idea' ? 'Just an idea' :
+                                                selectedApplication.projectStage === 'planning' ? 'Planning phase' :
+                                                selectedApplication.projectStage === 'early_dev' ? 'Early development' :
+                                                selectedApplication.projectStage === 'mid_dev' ? 'Mid-development' :
+                                                selectedApplication.projectStage === 'near_completion' ? 'Near completion' :
+                                                'Looking to scale/improve'
+                                            }
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Project Goal */}
+                            {selectedApplication.mainProjectGoal && (
+                                <div>
+                                    <strong>Main Project/Goal (June-December 2025):</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.mainProjectGoal}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Project Challenges */}
+                            {selectedApplication.projectChallenges && (
+                                <div>
+                                    <strong>Current Challenges:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.projectChallenges}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Goals */}
+                            {selectedApplication.goalByDecember && (
+                                <div>
+                                    <strong>Goal by December 2025:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.goalByDecember}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Success Metrics */}
+                            {selectedApplication.measureSuccess && (
+                                <div>
+                                    <strong>How they measure success:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.measureSuccess}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Experience */}
+                            {selectedApplication.previousParticipation && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-lg">Experience</h3>
+                                    <div>
+                                        <strong>Previous Participation:</strong> {
+                                            selectedApplication.previousParticipation === 'season1' ? 'Season 1' :
+                                            selectedApplication.previousParticipation === 'season2' ? 'Season 2' :
+                                            selectedApplication.previousParticipation === 'both' ? 'Both Seasons' :
+                                            'First time'
+                                        }
+                                    </div>
+                                    {selectedApplication.previousParticipationReason && (
+                                        <div>
+                                            <strong>Why couldn't complete previous sessions:</strong>
+                                            <div className="mt-2 p-4 bg-muted rounded-lg">
+                                                {selectedApplication.previousParticipationReason}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Commitment Understanding */}
+                            {selectedApplication.commitmentUnderstanding && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-lg">Commitment</h3>
+                                    <div>
+                                        <strong>Understanding:</strong> {
+                                            selectedApplication.commitmentUnderstanding === 'yes_all' ? 
+                                            'Understands ALL requirements' : 'Needs clarification'
+                                        }
+                                    </div>
+                                    {selectedApplication.commitmentRequirements && (
+                                        <div>
+                                            <strong>Requirements Checklist:</strong>
+                                            <div className="mt-2 space-y-2">
+                                                <div className={`flex items-center gap-2 ${selectedApplication.commitmentRequirements.attendingAllSessions ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {selectedApplication.commitmentRequirements.attendingAllSessions ? '✓' : '✗'} Attending ALL review sessions
+                                                </div>
+                                                <div className={`flex items-center gap-2 ${selectedApplication.commitmentRequirements.participatingExtra ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {selectedApplication.commitmentRequirements.participatingExtra ? '✓' : '✗'} Participating in additional sessions
+                                                </div>
+                                                <div className={`flex items-center gap-2 ${selectedApplication.commitmentRequirements.stayingActive ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {selectedApplication.commitmentRequirements.stayingActive ? '✓' : '✗'} Staying actively engaged
+                                                </div>
+                                                <div className={`flex items-center gap-2 ${selectedApplication.commitmentRequirements.attendingInPerson ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {selectedApplication.commitmentRequirements.attendingInPerson ? '✓' : '✗'} Attending 1 in-person session
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Motivation */}
+                            {selectedApplication.motivation && (
+                                <div>
+                                    <strong>Motivation:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.motivation}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Completion Strategy */}
+                            {selectedApplication.ensureCompletion && (
+                                <div>
+                                    <strong>How they'll ensure completion:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.ensureCompletion}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Optional Fields */}
+                            {selectedApplication.expertiseSkills && (
+                                <div>
+                                    <strong>Expertise/Skills:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.expertiseSkills}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedApplication.valuableSupport && (
+                                <div>
+                                    <strong>Valuable Support Needed:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.valuableSupport}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedApplication.additionalComments && (
+                                <div>
+                                    <strong>Additional Comments:</strong>
+                                    <div className="mt-2 p-4 bg-muted rounded-lg">
+                                        {selectedApplication.additionalComments}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Digital Signature */}
+                            {selectedApplication.digitalSignature && (
+                                <div>
+                                    <strong>Digital Signature:</strong> {selectedApplication.digitalSignature}
+                                </div>
+                            )}
+
+                            {/* Legacy field - only show if it has meaningful content and is different from motivation */}
+                            {selectedApplication.whyJoin && 
+                             selectedApplication.whyJoin !== selectedApplication.motivation && 
+                             !selectedApplication.whyJoin.includes('Note:') && 
+                             !selectedApplication.whyJoin.includes('Only submit this form') && (
+                                <div>
+                                    <strong>Legacy - Why they want to join:</strong>
+                                    <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm">
+                                        {selectedApplication.whyJoin}
+                                    </div>
+                                </div>
+                            )}
 
                             {selectedApplication.status === 'rejected' && selectedApplication.rejectionReason && (
                                 <div>
@@ -443,7 +724,7 @@ export default function ApplicationsAnalytics() {
                             )}
 
                             {selectedApplication.status === 'submitted' && (
-                                <div className="flex gap-2 justify-end">
+                                <div className="flex gap-2 justify-end pt-4 border-t">
                                     <Button
                                         variant="outline"
                                         onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}

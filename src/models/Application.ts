@@ -6,6 +6,13 @@ interface IStatusHistory {
     comment?: string;
 }
 
+interface ICommitmentRequirements {
+    attendingAllSessions: boolean;
+    participatingExtra: boolean;
+    stayingActive: boolean;
+    attendingInPerson: boolean;
+}
+
 export interface IApplication extends Document {
     userId: Types.ObjectId;
     name: string;
@@ -25,6 +32,7 @@ export interface IApplication extends Document {
     previousParticipationReason?: string; // New
     projectStage: 'idea' | 'planning' | 'early_dev' | 'mid_dev' | 'near_completion' | 'scaling'; // New
     commitmentUnderstanding: 'yes_all' | 'need_clarification'; // New
+    commitmentRequirements: ICommitmentRequirements; // New
     motivation: string; // New
     ensureCompletion: string; // New
     expertiseSkills?: string; // New
@@ -48,6 +56,13 @@ const StatusHistorySchema = new Schema<IStatusHistory>({
     comment: { type: String }
 });
 
+const CommitmentRequirementsSchema = new Schema<ICommitmentRequirements>({
+    attendingAllSessions: { type: Boolean, default: false },
+    participatingExtra: { type: Boolean, default: false },
+    stayingActive: { type: Boolean, default: false },
+    attendingInPerson: { type: Boolean, default: false }
+});
+
 const ApplicationSchema = new Schema<IApplication>({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
@@ -67,6 +82,7 @@ const ApplicationSchema = new Schema<IApplication>({
     previousParticipationReason: { type: String }, // New
     projectStage: { type: String, enum: ['idea', 'planning', 'early_dev', 'mid_dev', 'near_completion', 'scaling'] }, // New
     commitmentUnderstanding: { type: String, enum: ['yes_all', 'need_clarification'] }, // New
+    commitmentRequirements: { type: CommitmentRequirementsSchema, default: () => ({}) }, // New
     motivation: { type: String }, // New
     ensureCompletion: { type: String }, // New
     expertiseSkills: { type: String }, // New

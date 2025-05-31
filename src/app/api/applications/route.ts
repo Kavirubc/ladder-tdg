@@ -34,18 +34,91 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { phone, whyJoin, status = 'draft' } = body;
+        const {
+            phone,
+            currentLocation,
+            commitmentAttendance,
+            preferredMonth,
+            weekendAvailability,
+            mainProjectGoal,
+            projectType,
+            projectTypeOther,
+            projectChallenges,
+            goalByDecember,
+            measureSuccess,
+            previousParticipation,
+            previousParticipationReason,
+            projectStage,
+            commitmentUnderstanding,
+            commitmentRequirements,
+            motivation,
+            ensureCompletion,
+            expertiseSkills,
+            valuableSupport,
+            additionalComments,
+            digitalSignature,
+            submissionDate,
+            status = 'draft'
+        } = body;
 
-        // Validation
+        // Validation for submitted applications
         if (status === 'submitted') {
             if (!phone?.trim()) {
                 return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
             }
-            if (!whyJoin?.trim()) {
-                return NextResponse.json({ error: 'Please explain why you want to join' }, { status: 400 });
+            if (!currentLocation?.trim()) {
+                return NextResponse.json({ error: 'Current location is required' }, { status: 400 });
             }
-            if (whyJoin.length < 50) {
-                return NextResponse.json({ error: 'Please provide at least 50 characters' }, { status: 400 });
+            if (!commitmentAttendance) {
+                return NextResponse.json({ error: 'Commitment attendance is required' }, { status: 400 });
+            }
+            if (!preferredMonth) {
+                return NextResponse.json({ error: 'Preferred month is required' }, { status: 400 });
+            }
+            if (!weekendAvailability) {
+                return NextResponse.json({ error: 'Weekend availability is required' }, { status: 400 });
+            }
+            if (!mainProjectGoal?.trim()) {
+                return NextResponse.json({ error: 'Main project goal is required' }, { status: 400 });
+            }
+            if (!projectType) {
+                return NextResponse.json({ error: 'Project type is required' }, { status: 400 });
+            }
+            if (projectType === 'other' && !projectTypeOther?.trim()) {
+                return NextResponse.json({ error: 'Please specify your project type' }, { status: 400 });
+            }
+            if (!projectChallenges?.trim()) {
+                return NextResponse.json({ error: 'Project challenges are required' }, { status: 400 });
+            }
+            if (!goalByDecember?.trim()) {
+                return NextResponse.json({ error: 'Goal by December is required' }, { status: 400 });
+            }
+            if (!measureSuccess?.trim()) {
+                return NextResponse.json({ error: 'How you measure success is required' }, { status: 400 });
+            }
+            if (!previousParticipation) {
+                return NextResponse.json({ error: 'Previous participation info is required' }, { status: 400 });
+            }
+            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
+                return NextResponse.json({ error: 'Please explain why you couldn\'t complete previous sessions' }, { status: 400 });
+            }
+            if (!projectStage) {
+                return NextResponse.json({ error: 'Project stage is required' }, { status: 400 });
+            }
+            if (!commitmentUnderstanding) {
+                return NextResponse.json({ error: 'Commitment understanding is required' }, { status: 400 });
+            }
+            if (!motivation?.trim()) {
+                return NextResponse.json({ error: 'Motivation is required' }, { status: 400 });
+            }
+            if (!ensureCompletion?.trim()) {
+                return NextResponse.json({ error: 'How you will ensure completion is required' }, { status: 400 });
+            }
+            if (!digitalSignature?.trim()) {
+                return NextResponse.json({ error: 'Digital signature is required' }, { status: 400 });
+            }
+            if (digitalSignature?.toLowerCase() !== session.user.name?.toLowerCase()) {
+                return NextResponse.json({ error: 'Digital signature must match your full name' }, { status: 400 });
             }
         }
 
@@ -62,7 +135,33 @@ export async function POST(request: NextRequest) {
             name: session.user.name,
             email: session.user.email,
             phone: phone || '',
-            whyJoin: whyJoin || '',
+            currentLocation: currentLocation || '',
+            commitmentAttendance,
+            preferredMonth,
+            weekendAvailability,
+            mainProjectGoal: mainProjectGoal || '',
+            projectType,
+            projectTypeOther,
+            projectChallenges: projectChallenges || '',
+            goalByDecember: goalByDecember || '',
+            measureSuccess: measureSuccess || '',
+            previousParticipation,
+            previousParticipationReason,
+            projectStage,
+            commitmentUnderstanding,
+            commitmentRequirements: commitmentRequirements || {
+                attendingAllSessions: false,
+                participatingExtra: false,
+                stayingActive: false,
+                attendingInPerson: false
+            },
+            motivation: motivation || '',
+            ensureCompletion: ensureCompletion || '',
+            expertiseSkills,
+            valuableSupport,
+            additionalComments,
+            digitalSignature: digitalSignature || '',
+            submissionDate: submissionDate ? new Date(submissionDate) : new Date(),
             status,
         });
 
@@ -85,32 +184,136 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { phone, whyJoin, status } = body;
+        const {
+            phone,
+            currentLocation,
+            commitmentAttendance,
+            preferredMonth,
+            weekendAvailability,
+            mainProjectGoal,
+            projectType,
+            projectTypeOther,
+            projectChallenges,
+            goalByDecember,
+            measureSuccess,
+            previousParticipation,
+            previousParticipationReason,
+            projectStage,
+            commitmentUnderstanding,
+            commitmentRequirements,
+            motivation,
+            ensureCompletion,
+            expertiseSkills,
+            valuableSupport,
+            additionalComments,
+            digitalSignature,
+            submissionDate,
+            status
+        } = body;
 
         // Validation for submitted applications
         if (status === 'submitted') {
             if (!phone?.trim()) {
                 return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
             }
-            if (!whyJoin?.trim()) {
-                return NextResponse.json({ error: 'Please explain why you want to join' }, { status: 400 });
+            if (!currentLocation?.trim()) {
+                return NextResponse.json({ error: 'Current location is required' }, { status: 400 });
             }
-            if (whyJoin.length < 50) {
-                return NextResponse.json({ error: 'Please provide at least 50 characters' }, { status: 400 });
+            if (!commitmentAttendance) {
+                return NextResponse.json({ error: 'Commitment attendance is required' }, { status: 400 });
+            }
+            if (!preferredMonth) {
+                return NextResponse.json({ error: 'Preferred month is required' }, { status: 400 });
+            }
+            if (!weekendAvailability) {
+                return NextResponse.json({ error: 'Weekend availability is required' }, { status: 400 });
+            }
+            if (!mainProjectGoal?.trim()) {
+                return NextResponse.json({ error: 'Main project goal is required' }, { status: 400 });
+            }
+            if (!projectType) {
+                return NextResponse.json({ error: 'Project type is required' }, { status: 400 });
+            }
+            if (projectType === 'other' && !projectTypeOther?.trim()) {
+                return NextResponse.json({ error: 'Please specify your project type' }, { status: 400 });
+            }
+            if (!projectChallenges?.trim()) {
+                return NextResponse.json({ error: 'Project challenges are required' }, { status: 400 });
+            }
+            if (!goalByDecember?.trim()) {
+                return NextResponse.json({ error: 'Goal by December is required' }, { status: 400 });
+            }
+            if (!measureSuccess?.trim()) {
+                return NextResponse.json({ error: 'How you measure success is required' }, { status: 400 });
+            }
+            if (!previousParticipation) {
+                return NextResponse.json({ error: 'Previous participation info is required' }, { status: 400 });
+            }
+            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
+                return NextResponse.json({ error: 'Please explain why you couldn\'t complete previous sessions' }, { status: 400 });
+            }
+            if (!projectStage) {
+                return NextResponse.json({ error: 'Project stage is required' }, { status: 400 });
+            }
+            if (!commitmentUnderstanding) {
+                return NextResponse.json({ error: 'Commitment understanding is required' }, { status: 400 });
+            }
+            if (!motivation?.trim()) {
+                return NextResponse.json({ error: 'Motivation is required' }, { status: 400 });
+            }
+            if (!ensureCompletion?.trim()) {
+                return NextResponse.json({ error: 'How you will ensure completion is required' }, { status: 400 });
+            }
+            if (!digitalSignature?.trim()) {
+                return NextResponse.json({ error: 'Digital signature is required' }, { status: 400 });
+            }
+            if (digitalSignature?.toLowerCase() !== session.user.name?.toLowerCase()) {
+                return NextResponse.json({ error: 'Digital signature must match your full name' }, { status: 400 });
             }
         }
 
         await connectDB();
 
+        const updateData: any = {
+            phone: phone || '',
+            currentLocation: currentLocation || '',
+            commitmentAttendance,
+            preferredMonth,
+            weekendAvailability,
+            mainProjectGoal: mainProjectGoal || '',
+            projectType,
+            projectTypeOther,
+            projectChallenges: projectChallenges || '',
+            goalByDecember: goalByDecember || '',
+            measureSuccess: measureSuccess || '',
+            previousParticipation,
+            previousParticipationReason,
+            projectStage,
+            commitmentUnderstanding,
+            commitmentRequirements: commitmentRequirements || {
+                attendingAllSessions: false,
+                participatingExtra: false,
+                stayingActive: false,
+                attendingInPerson: false
+            },
+            motivation: motivation || '',
+            ensureCompletion: ensureCompletion || '',
+            expertiseSkills,
+            valuableSupport,
+            additionalComments,
+            digitalSignature: digitalSignature || '',
+            submissionDate: submissionDate ? new Date(submissionDate) : new Date(),
+            status,
+            updatedAt: new Date(),
+        };
+
+        if (status === 'submitted') {
+            updateData.submittedAt = new Date();
+        }
+
         const application = await Application.findOneAndUpdate(
             { userId: session.user.id },
-            {
-                phone: phone || '',
-                whyJoin: whyJoin || '',
-                status,
-                updatedAt: new Date(),
-                ...(status === 'submitted' && { submittedAt: new Date() })
-            },
+            updateData,
             { new: true, runValidators: true }
         );
 
