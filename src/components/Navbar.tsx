@@ -67,17 +67,7 @@ export default function Navbar() {
                         {/* Navigation Links */}
                         <div className="flex items-center space-x-4">
                             {/* Apply Link for regular users */}
-                            {!isAdmin && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => router.push('/apply')}
-                                    className="flex items-center space-x-2"
-                                >
-                                    <span className="hidden sm:inline">Apply to Ladder</span>
-                                    <span className="sm:hidden">Apply</span>
-                                </Button>
-                            )}
+                            
 
                             {/* Admin Links */}
                             {isAdmin && (

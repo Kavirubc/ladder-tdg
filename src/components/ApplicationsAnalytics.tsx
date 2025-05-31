@@ -4,18 +4,23 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-    Users,
-    FileText,
-    Clock,
-    CheckCircle,
-    XCircle,
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+    Users, 
+    FileText, 
+    Clock, 
+    CheckCircle, 
+    XCircle, 
     Eye,
     Loader2,
-    TrendingUp
+    TrendingUp,
+    Edit,
+    RotateCcw
 } from 'lucide-react';
 
 interface Application {
@@ -25,9 +30,15 @@ interface Application {
     phone: string;
     whyJoin: string;
     status: 'draft' | 'submitted' | 'reviewed' | 'accepted' | 'rejected';
+    rejectionReason?: string;
     createdAt: string;
     updatedAt: string;
     submittedAt?: string;
+    statusHistory?: Array<{
+        status: string;
+        timestamp: string;
+        comment: string;
+    }>;
 }
 
 interface Analytics {
@@ -48,6 +59,12 @@ export default function ApplicationsAnalytics() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [statusUpdateData, setStatusUpdateData] = useState({
+        applicationId: '',
+        newStatus: '',
+        comment: ''
+    });
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -64,7 +81,7 @@ export default function ApplicationsAnalytics() {
             if (applicationsRes.ok && analyticsRes.ok) {
                 const applicationsData = await applicationsRes.json();
                 const analyticsData = await analyticsRes.json();
-
+                
                 setApplications(applicationsData.applications);
                 setAnalytics(analyticsData);
             } else {
@@ -78,7 +95,57 @@ export default function ApplicationsAnalytics() {
         }
     };
 
-    const updateApplicationStatus = async (applicationId: string, newStatus: string) => {
+    const openStatusModal = (applicationId: string, currentStatus: string) => {
+        setStatusUpdateData({
+            applicationId,
+            newStatus: '',
+            comment: ''
+        });
+        setShowStatusModal(true);
+    };
+
+    const updateApplicationStatus = async () => {
+        if (!statusUpdateData.newStatus) {
+            setError('Please select a status');
+            return;
+        }
+
+        if (statusUpdateData.newStatus === 'rejected' && !statusUpdateData.comment.trim()) {
+            setError('Please provide a reason for rejection');
+            return;
+        }
+
+        setUpdating(statusUpdateData.applicationId);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/admin/applications/${statusUpdateData.applicationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    status: statusUpdateData.newStatus,
+                    comment: statusUpdateData.comment
+                }),
+            });
+
+            if (response.ok) {
+                setShowStatusModal(false);
+                fetchData();
+                setStatusUpdateData({ applicationId: '', newStatus: '', comment: '' });
+            } else {
+                const data = await response.json();
+                setError(data.error || 'Failed to update status');
+            }
+        } catch (error) {
+            setError('An error occurred while updating');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const quickStatusUpdate = async (applicationId: string, newStatus: string) => {
         setUpdating(applicationId);
         setError(null);
 
@@ -92,7 +159,6 @@ export default function ApplicationsAnalytics() {
             });
 
             if (response.ok) {
-                // Refresh data
                 fetchData();
             } else {
                 const data = await response.json();
@@ -235,27 +301,27 @@ export default function ApplicationsAnalytics() {
                                                 >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => openStatusModal(application._id, application.status)}
+                                                    disabled={updating === application._id}
+                                                >
+                                                    {updating === application._id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Edit className="h-4 w-4" />
+                                                    )}
+                                                </Button>
                                                 {application.status === 'submitted' && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => updateApplicationStatus(application._id, 'accepted')}
+                                                            onClick={() => quickStatusUpdate(application._id, 'accepted')}
                                                             disabled={updating === application._id}
                                                         >
-                                                            {updating === application._id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                                            )}
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => updateApplicationStatus(application._id, 'rejected')}
-                                                            disabled={updating === application._id}
-                                                        >
-                                                            <XCircle className="h-4 w-4 text-red-600" />
+                                                            <CheckCircle className="h-4 w-4 text-green-600" />
                                                         </Button>
                                                     </>
                                                 )}
@@ -269,28 +335,86 @@ export default function ApplicationsAnalytics() {
                 </CardContent>
             </Card>
 
+            {/* Status Update Modal */}
+            <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Update Application Status</DialogTitle>
+                        <DialogDescription>
+                            Change the status of this application and optionally add a comment.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="status">New Status</Label>
+                            <Select 
+                                value={statusUpdateData.newStatus} 
+                                onValueChange={(value) => setStatusUpdateData(prev => ({ ...prev, newStatus: value }))}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="submitted">Submitted</SelectItem>
+                                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                                    <SelectItem value="accepted">Accepted</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="comment">
+                                Comment {statusUpdateData.newStatus === 'rejected' && <span className="text-red-500">*</span>}
+                            </Label>
+                            <textarea
+                                id="comment"
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                placeholder={statusUpdateData.newStatus === 'rejected' ? 'Please provide a reason for rejection...' : 'Optional comment...'}
+                                value={statusUpdateData.comment}
+                                onChange={(e) => setStatusUpdateData(prev => ({ ...prev, comment: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowStatusModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={updateApplicationStatus}
+                            disabled={!statusUpdateData.newStatus || (statusUpdateData.newStatus === 'rejected' && !statusUpdateData.comment.trim())}
+                        >
+                            Update Status
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Application Detail Modal */}
             {selectedApplication && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-                        <CardHeader>
+                <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}>
+                    <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <CardTitle>{selectedApplication.name}'s Application</CardTitle>
-                                    <CardDescription>{selectedApplication.email}</CardDescription>
+                                    <DialogTitle>{selectedApplication.name}'s Application</DialogTitle>
+                                    <DialogDescription>{selectedApplication.email}</DialogDescription>
                                 </div>
-                                <Button variant="ghost" onClick={() => setSelectedApplication(null)}>
-                                    ×
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    {getStatusBadge(selectedApplication.status)}
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                        </DialogHeader>
+                        <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <strong>Phone:</strong> {selectedApplication.phone}
-                                </div>
-                                <div>
-                                    <strong>Status:</strong> {getStatusBadge(selectedApplication.status)}
                                 </div>
                                 <div>
                                     <strong>Applied:</strong> {formatDate(selectedApplication.createdAt)}
@@ -301,34 +425,43 @@ export default function ApplicationsAnalytics() {
                                     </div>
                                 )}
                             </div>
-
+                            
                             <div>
                                 <strong>Why they want to join:</strong>
-                                <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="mt-2 p-4 bg-muted rounded-lg">
                                     {selectedApplication.whyJoin}
                                 </div>
                             </div>
+
+                            {selectedApplication.status === 'rejected' && selectedApplication.rejectionReason && (
+                                <div>
+                                    <strong>Rejection Reason:</strong>
+                                    <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                        {selectedApplication.rejectionReason}
+                                    </div>
+                                </div>
+                            )}
 
                             {selectedApplication.status === 'submitted' && (
                                 <div className="flex gap-2 justify-end">
                                     <Button
                                         variant="outline"
-                                        onClick={() => updateApplicationStatus(selectedApplication._id, 'rejected')}
-                                        disabled={updating === selectedApplication._id}
+                                        onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}
                                     >
+                                        <XCircle className="h-4 w-4 mr-2" />
                                         Reject
                                     </Button>
                                     <Button
-                                        onClick={() => updateApplicationStatus(selectedApplication._id, 'accepted')}
-                                        disabled={updating === selectedApplication._id}
+                                        onClick={() => quickStatusUpdate(selectedApplication._id, 'accepted')}
                                     >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
                                         Accept
                                     </Button>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );

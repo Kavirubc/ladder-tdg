@@ -17,7 +17,7 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { status } = body;
+        const { status, comment } = body;
 
         if (!['draft', 'submitted', 'reviewed', 'accepted', 'rejected'].includes(status)) {
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
@@ -25,13 +25,38 @@ export async function PUT(
 
         await connectDB();
 
+        // Get current application to preserve status history
+        const currentApplication = await Application.findById(params.id);
+        if (!currentApplication) {
+            return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+        }
+
+        // Prepare update object
+        const updateData: any = {
+            status,
+            updatedAt: new Date(),
+            ...(status === 'reviewed' && { reviewedAt: new Date() })
+        };
+
+        // Handle rejection reason
+        if (status === 'rejected' && comment) {
+            updateData.rejectionReason = comment;
+        }
+
+        // Add to status history
+        const statusHistoryEntry = {
+            status,
+            timestamp: new Date(),
+            comment: comment || ''
+        };
+
+        updateData.$push = {
+            statusHistory: statusHistoryEntry
+        };
+
         const application = await Application.findByIdAndUpdate(
             params.id,
-            {
-                status,
-                updatedAt: new Date(),
-                ...(status === 'reviewed' && { reviewedAt: new Date() })
-            },
+            updateData,
             { new: true, runValidators: true }
         );
 

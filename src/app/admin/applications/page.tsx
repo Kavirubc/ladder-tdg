@@ -1,19 +1,49 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import ApplicationsAnalytics from '@/components/ApplicationsAnalytics';
+'use client';
 
-export default async function AdminApplicationsPage() {
-    // Check if user is authenticated
-    const session = await getServerSession(authOptions);
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Loader2 } from 'lucide-react';
 
-    if (!session) {
-        redirect('/login');
+const ApplicationsAnalytics = dynamic(() => import('@/components/ApplicationsAnalytics'), {
+    loading: () => (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    ),
+    ssr: false
+});
+
+export default function AdminApplicationsPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (status === 'loading') return; // Still loading
+
+        if (!session) {
+            router.push('/login');
+            return;
+        }
+
+        // Check if user is admin (using the specific email)
+        if (session.user?.email !== 'hapuarachchikaviru@gmail.com') {
+            router.push('/dashboard');
+            return;
+        }
+    }, [session, status, router]);
+
+    if (status === 'loading') {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
     }
 
-    // Check if user is admin (using the specific email)
-    if (session.user.email !== 'hapuarachchikaviru@gmail.com') {
-        redirect('/dashboard');
+    if (!session || session.user?.email !== 'hapuarachchikaviru@gmail.com') {
+        return null; // Will redirect in useEffect
     }
 
     return (

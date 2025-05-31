@@ -29,6 +29,24 @@ const ApplicationSchema = new mongoose.Schema({
         enum: ['draft', 'submitted', 'reviewed', 'accepted', 'rejected'],
         default: 'draft',
     },
+    rejectionReason: {
+        type: String,
+        default: '',
+    },
+    statusHistory: [{
+        status: {
+            type: String,
+            enum: ['draft', 'submitted', 'reviewed', 'accepted', 'rejected'],
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now,
+        },
+        comment: {
+            type: String,
+            default: '',
+        }
+    }],
     submittedAt: {
         type: Date,
     },
