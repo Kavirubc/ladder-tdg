@@ -324,6 +324,7 @@ export default function ActivityForm({
                                                     <Button
                                                         variant={"outline"}
                                                         className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                                                        data-ph-event="activity_form_action"
                                                     >
                                                         {field.value ? (
                                                             format(field.value, "PPP")
@@ -359,7 +360,7 @@ export default function ActivityForm({
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isSubmitting}>
+                            <Button type="submit" disabled={isSubmitting} data-ph-event="activity_form_action">
                                 {isSubmitting ? 'Saving...' : (initialActivity ? 'Save Changes' : 'Create Activity')}
                             </Button>
                         </DialogFooter>

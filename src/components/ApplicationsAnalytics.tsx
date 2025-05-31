@@ -333,8 +333,8 @@ export default function ApplicationsAnalytics() {
                                                 <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">N/A</span>
                                             ) : (
                                                 <span className={`px-2 py-1 rounded text-xs ${application.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
-                                                        application.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
-                                                            'bg-yellow-100 text-yellow-800'
+                                                    application.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
                                                     }`}>
                                                     {application.commitmentAttendance === 'yes' ? 'Yes' :
                                                         application.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
@@ -351,6 +351,7 @@ export default function ApplicationsAnalytics() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setSelectedApplication(application)}
+                                                    data-ph-event="applications_analytics_action"
                                                 >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
@@ -359,6 +360,7 @@ export default function ApplicationsAnalytics() {
                                                     size="sm"
                                                     onClick={() => openStatusModal(application._id, application.status)}
                                                     disabled={updating === application._id}
+                                                    data-ph-event="applications_analytics_action"
                                                 >
                                                     {updating === application._id ? (
                                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -373,6 +375,7 @@ export default function ApplicationsAnalytics() {
                                                             size="sm"
                                                             onClick={() => quickStatusUpdate(application._id, 'accepted')}
                                                             disabled={updating === application._id}
+                                                            data-ph-event="applications_analytics_action"
                                                         >
                                                             <CheckCircle className="h-4 w-4 text-green-600" />
                                                         </Button>
@@ -435,6 +438,7 @@ export default function ApplicationsAnalytics() {
                         <Button
                             onClick={updateApplicationStatus}
                             disabled={!statusUpdateData.newStatus || (statusUpdateData.newStatus === 'rejected' && !statusUpdateData.comment.trim())}
+                            data-ph-event="applications_analytics_action"
                         >
                             Update Status
                         </Button>
@@ -458,6 +462,7 @@ export default function ApplicationsAnalytics() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}
+                                        data-ph-event="applications_analytics_action"
                                     >
                                         <Edit className="h-4 w-4" />
                                     </Button>
@@ -493,8 +498,8 @@ export default function ApplicationsAnalytics() {
                                             <div>
                                                 <strong>Can commit to all sessions:</strong>
                                                 <span className={`ml-2 px-2 py-1 rounded text-sm ${selectedApplication.commitmentAttendance === 'yes' ? 'bg-green-100 text-green-800' :
-                                                        selectedApplication.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
-                                                            'bg-yellow-100 text-yellow-800'
+                                                    selectedApplication.commitmentAttendance === 'no' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
                                                     }`}>
                                                     {selectedApplication.commitmentAttendance === 'yes' ? 'Yes' :
                                                         selectedApplication.commitmentAttendance === 'no' ? 'No' : 'Unsure'}
@@ -726,12 +731,14 @@ export default function ApplicationsAnalytics() {
                                     <Button
                                         variant="outline"
                                         onClick={() => openStatusModal(selectedApplication._id, selectedApplication.status)}
+                                        data-ph-event="applications_analytics_action"
                                     >
                                         <XCircle className="h-4 w-4 mr-2" />
                                         Reject
                                     </Button>
                                     <Button
                                         onClick={() => quickStatusUpdate(selectedApplication._id, 'accepted')}
+                                        data-ph-event="applications_analytics_action"
                                     >
                                         <CheckCircle className="h-4 w-4 mr-2" />
                                         Accept
