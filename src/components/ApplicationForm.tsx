@@ -366,7 +366,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
 
     return (
         <div className="flex justify-center w-full">
-            <div className="min-w-4xl max-w-4xl w-full">
+            <div className="md:min-w-4xl max-w-4xl w-full">
                 {formData.status && formData.status !== 'draft' && (
                     <div className={`p-4 rounded-lg border ${formData.status === 'submitted' ? 'bg-blue-50 border-blue-200' :
                         formData.status === 'reviewed' ? 'bg-yellow-50 border-yellow-200' :
