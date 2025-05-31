@@ -66,16 +66,41 @@ export default function Navbar() {
 
                         {/* Navigation Links */}
                         <div className="flex items-center space-x-4">
-                            {isAdmin && (
+                            {/* Apply Link for regular users */}
+                            {!isAdmin && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={handleAdminClick}
+                                    onClick={() => router.push('/apply')}
                                     className="flex items-center space-x-2"
                                 >
-                                    <Shield className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Admin</span>
+                                    <span className="hidden sm:inline">Apply to Ladder</span>
+                                    <span className="sm:hidden">Apply</span>
                                 </Button>
+                            )}
+
+                            {/* Admin Links */}
+                            {isAdmin && (
+                                <>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleAdminClick}
+                                        className="flex items-center space-x-2"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Dashboard</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => router.push('/admin/applications')}
+                                        className="flex items-center space-x-2"
+                                    >
+                                        <span className="hidden sm:inline">Applications</span>
+                                        <span className="sm:hidden">Apps</span>
+                                    </Button>
+                                </>
                             )}
                         </div>
 
