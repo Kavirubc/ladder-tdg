@@ -1,0 +1,271 @@
+/* Custom dashboard styles to reduce visual noise */
+
+/* Dashboard layout */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Welcome banner */
+.welcome-banner {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.welcome-banner h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.welcome-banner p {
+  max-width: 36rem;
+  margin: 0 auto;
+  color: #6b7280;
+  transition: all 0.3s ease;
+}
+
+.welcome-banner::after {
+  content: "";
+  display: block;
+  width: 50px;
+  height: 1px;
+  background: #e5e7eb;
+  margin: 1rem auto 0;
+}
+
+/* Application banner */
+.application-banner {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  border: 1px solid #e5e7eb;
+}
+
+.application-banner-content {
+  color: #111827;
+  position: relative;
+  flex: 1;
+  padding-right: 1rem;
+}
+
+.application-banner-content h2 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.application-banner-content p {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.application-banner-btn {
+  background: #ffffff;
+  color: #111827;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.application-banner-btn:hover {
+  background: #f5f5f5;
+  border-color: #d1d5db;
+}
+
+/* Dashboard cards */
+.dashboard-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-card-header {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.dashboard-card-content {
+  padding: 1rem;
+}
+
+.dashboard-card + .dashboard-card {
+  margin-top: 1rem;
+}
+
+.dashboard-stat {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.dashboard-stat-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.dashboard-stat-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Activity cards */
+.activity-card {
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.75rem;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.activity-card:hover {
+  border-color: #d1d5db;
+}
+
+.activity-card.completed {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge-primary {
+  color: #4b5563;
+  background: #f3f4f6;
+}
+
+.status-badge-success {
+  color: #065f46;
+  background: #ecfdf5;
+}
+
+.status-badge-warning {
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.status-badge-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+/* Intensity indicators with more muted colors */
+.intensity-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.intensity-dot::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  opacity: 0.4;
+}
+
+.intensity-easy {
+  background-color: #9ca3af;
+}
+
+.intensity-easy::after {
+  border-color: #9ca3af;
+}
+
+.intensity-medium {
+  background-color: #6b7280;
+}
+
+.intensity-medium::after {
+  border-color: #6b7280;
+}
+
+.intensity-hard {
+  background-color: #4b5563;
+}
+
+.intensity-hard::after {
+  border-color: #4b5563;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .welcome-banner h1 {
+    font-size: 1.5rem;
+  }
+  
+  .application-banner {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .application-banner-content {
+    padding-right: 0;
+  }
+}

@@ -1,0 +1,73 @@
+/* Accessibility improvements */
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #d1d5db;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* High contrast mode improvements */
+@media (forced-colors: active) {
+  .dashboard-card {
+    border: 1px solid CanvasText;
+  }
+  
+  .status-badge {
+    border: 1px solid CanvasText;
+    color: CanvasText;
+  }
+  
+  .activity-card {
+    border: 1px solid CanvasText;
+  }
+  
+  .intensity-dot {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: white;
+  color: #6366f1;
+  padding: 8px;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Keyboard focus indicators */
+.keyboard-user *:focus {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 2px !important;
+}

@@ -11,6 +11,7 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import type { Activity, ActivityCompletion, Todo, ActivityProgressStats } from '@/types/activity';
 import ActivityForm from '@/components/ActivityForm'; // Import the ActivityForm component
 import TodoComponent from '@/components/TodoComponent'; // Import TodoComponent
+import QuickAddTodo from '@/components/QuickAddTodo'; // Import the new QuickAddTodo component
 import {
     Dialog,
     DialogContent,
@@ -36,6 +37,7 @@ export default function IntegratedDashboard({
     const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
     const [selectedActivityForTodo, setSelectedActivityForTodo] = useState<string | undefined>(undefined);
     const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+    const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | undefined>(undefined);
 
     const fetchData = useCallback(async () => {
@@ -172,9 +174,9 @@ export default function IntegratedDashboard({
 
     const getActivityIntensityColor = (intensity: string) => {
         switch (intensity) {
-            case 'easy': return 'bg-green-500';
-            case 'medium': return 'bg-yellow-500';
-            case 'hard': return 'bg-red-500';
+            case 'easy': return 'bg-gray-400';
+            case 'medium': return 'bg-gray-500';
+            case 'hard': return 'bg-gray-600';
             default: return 'bg-gray-500';
         }
     };
@@ -194,30 +196,48 @@ export default function IntegratedDashboard({
         setIsTodoModalOpen(true);
     };
 
+    const openQuickAddModal = () => {
+        setIsQuickAddModalOpen(true);
+    };
+
     const navigateToActivityTasks = (activityId: string) => {
         router.push(`/tasks?activityId=${activityId}`);
     };
 
     const renderActivityCard = (activity: Activity) => {
         const isCompletedToday = todaysCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
+
+        // Determine intensity class
+        const intensityClass = activity.intensity === 'easy' ? 'intensity-easy' :
+            activity.intensity === 'medium' ? 'intensity-medium' : 'intensity-hard';
+
         return (
-            <div key={activity._id} className={`p-3 rounded-lg border transition-all ${isCompletedToday ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'hover:bg-muted'}`}>
+            <div key={activity._id} className={`activity-card ${isCompletedToday ? 'completed' : ''}`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
+                        <div className={`intensity-dot ${intensityClass}`} />
                         <div>
-                            <div className="font-medium">{activity.title}</div>
+                            <div className="font-medium text-gray-800">{activity.title}</div>
                             {activity.description && (
-                                <div className="text-sm text-muted-foreground">{activity.description}</div>
+                                <div className="text-sm text-gray-500 mt-0.5">{activity.description}</div>
                             )}
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                                 <Repeat className="h-3 w-3" /> {activity.targetFrequency}
                             </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline">{activity.pointValue} pts</Badge>
-                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
+                        <span className="status-badge status-badge-outline status-badge-primary">
+                            {activity.pointValue} pts
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigateToActivityTasks(activity._id!)}
+                            title="Manage Tasks"
+                            data-ph-event="integrated_dashboard_action"
+                            className="rounded-full p-1 h-8 w-8"
+                        >
                             <ListChecks className="h-4 w-4" />
                         </Button>
                         <Button
@@ -226,6 +246,7 @@ export default function IntegratedDashboard({
                             variant={isCompletedToday ? "secondary" : "default"}
                             size="sm"
                             data-ph-event="integrated_dashboard_action"
+                            className={`rounded-full p-1 h-8 w-8 ${isCompletedToday ? 'bg-green-100 text-green-700' : 'hover:bg-gray-100'}`}
                         >
                             {isCompletedToday ? (
                                 <CheckCircle2 className="h-4 w-4" />
@@ -241,8 +262,42 @@ export default function IntegratedDashboard({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-96">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <div className="loading-spinner" role="status" aria-label="Loading dashboard">
+                <div className="spinner"></div>
+                <span className="sr-only">Loading your dashboard content...</span>
+
+                {/* Skeleton loading UI */}
+                <div className="w-full space-y-6 mt-6 animate-pulse">
+                    {/* Skeleton for stats card */}
+                    <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+                        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="flex flex-col items-center">
+                                    <div className="h-8 bg-gray-200 rounded-full w-16 mb-2"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Skeleton for tab navigation */}
+                    <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+
+                    {/* Skeleton for content cards */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {[1, 2].map(card => (
+                            <div key={card} className="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+                                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                                <div className="space-y-3">
+                                    {[1, 2, 3].map(item => (
+                                        <div key={item} className="h-16 bg-gray-200 rounded-md"></div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
@@ -257,60 +312,104 @@ export default function IntegratedDashboard({
     return (
         <div className="space-y-6">
             {/* Today's Overview */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5" />
+            <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                    <h2 className="flex items-center gap-2 text-xl font-medium text-gray-800">
+                        <Calendar className="h-5 w-5 text-gray-500" />
                         Today&apos;s Overview - {format(new Date(), 'EEEE, MMMM d')}
-                    </CardTitle>
-                    <CardDescription>
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
                         Your daily progress across activities and tasks
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                    </p>
+                </div>
+                <div className="dashboard-card-content">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-primary">{todaysCompletions.length}</div>
-                            <div className="text-sm text-muted-foreground">Activities Completed Today</div>
+                        <div className="dashboard-stat">
+                            <div className="dashboard-stat-value text-gray-700">{todaysCompletions.length}</div>
+                            <div className="dashboard-stat-label">Activities Completed</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">{todos.filter(t => t.isCompleted).length}</div>
-                            <div className="text-sm text-muted-foreground">Tasks Completed</div>
+                        <div className="dashboard-stat">
+                            <div className="dashboard-stat-value text-gray-700">{todos.filter(t => t.isCompleted).length}</div>
+                            <div className="dashboard-stat-label">Tasks Completed</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-600">{progressStats?.totalPoints ?? 'N/A'}</div>
-                            <div className="text-sm text-muted-foreground">Total Points</div>
+                        <div className="dashboard-stat">
+                            <div className="dashboard-stat-value text-gray-700">{progressStats?.totalPoints ?? '0'}</div>
+                            <div className="dashboard-stat-label">Total Points</div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Main Content */}
-            <Tabs defaultValue="today" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-4">
-                    <TabsTrigger value="today">Today's Focus</TabsTrigger>
-                    <TabsTrigger value="recurring">Recurring</TabsTrigger>
-                    <TabsTrigger value="goals">One-Time Goals</TabsTrigger>
-                    <TabsTrigger value="all-tasks">All Tasks</TabsTrigger>
-                    <TabsTrigger value="archived">Archived Tasks</TabsTrigger>
+            <Tabs defaultValue="today" className="w-full dashboard-tabs">
+                <TabsList
+                    className="flex w-full overflow-x-auto mb-4 bg-gray-50 border rounded-md p-1"
+                    aria-label="Dashboard sections"
+                >
+                    <TabsTrigger
+                        value="today"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                        aria-label="Today's Focus tab"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /><path d="M10 16h4" /></svg>
+                        Today's Focus
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="recurring"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                        aria-label="Recurring activities tab"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3v2" /><path d="M10 18H7" /><path d="M7 14v4" /><path d="m14 10-3.5 3.5" /><path d="M10 13.5 7 17" /><path d="M17 21v-2" /><path d="M21 7V4a1 1 0 0 0-1-1h-3" /><path d="M3 7v3a1 1 0 0 0 1 1h3" /><path d="M21 17v3a1 1 0 0 1-1 1h-3" /><path d="M3 17v-3a1 1 0 0 1 1-1h3" /></svg>
+                        Recurring
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="goals"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                        aria-label="One-Time Goals tab"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
+                        One-Time Goals
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="all-tasks"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                        aria-label="All Tasks tab"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 12H3" /><path d="m16 6-4 6 4 6" /><path d="M21 12h-5" /></svg>
+                        All Tasks
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="archived"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                        aria-label="Archived Tasks tab"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></svg>
+                        Archived Tasks
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* Tab Content for Today's Focus */}
                 <TabsContent value="today" className="space-y-4">
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Today's Activities (Both Recurring and One-Time) */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
+                        <div className="dashboard-card">
+                            <div className="dashboard-card-header flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle className="text-lg">Today&apos;s Activities</CardTitle>
-                                    <CardDescription>Focus on your habits and goals for today</CardDescription>
+                                    <h3 className="text-lg font-medium text-gray-800">Today&apos;s Activities</h3>
+                                    <p className="text-sm text-gray-500 mt-1">Focus on your habits and goals for today</p>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openActivityForm()}
+                                    data-ph-event="integrated_dashboard_action"
+                                    className="bg-white hover:bg-gray-50"
+                                >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Activity
                                 </Button>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
+                            </div>
+                            <div className="dashboard-card-content space-y-3">
                                 {/* Show both recurring activities for today and incomplete one-time goals */}
                                 {(() => {
                                     const todaysRecurringActivities = recurringActivities.filter(act =>
@@ -326,9 +425,10 @@ export default function IntegratedDashboard({
 
                                     if (allTodaysActivities.length === 0) {
                                         return (
-                                            <p className="text-muted-foreground text-center py-4">
-                                                No activities set up for today. Add some activities to get started!
-                                            </p>
+                                            <div className="text-gray-500 text-center py-6 bg-gray-50/50 rounded-md border border-dashed border-gray-200">
+                                                <p>No activities set up for today.</p>
+                                                <p className="text-sm mt-1">Add some activities to get started!</p>
+                                            </div>
                                         );
                                     }
 
@@ -338,21 +438,23 @@ export default function IntegratedDashboard({
                                             (typeof c.activityId === 'object' && c.activityId._id === activity._id)
                                         );
                                         const isOneTime = !activity.isRecurring;
+                                        const intensityClass = activity.intensity === 'easy' ? 'intensity-easy' :
+                                            activity.intensity === 'medium' ? 'intensity-medium' : 'intensity-hard';
 
                                         return (
-                                            <div key={activity._id} className={`p-3 rounded-lg border transition-all ${isCompletedToday ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'hover:bg-muted'}`}>
+                                            <div key={activity._id} className={`activity-card ${isCompletedToday ? 'completed' : ''}`}>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
+                                                        <div className={`intensity-dot ${intensityClass}`} />
                                                         <div>
-                                                            <div className="font-medium flex items-center gap-2">
+                                                            <div className="font-medium text-gray-800 flex items-center gap-2">
                                                                 {activity.title}
-                                                                {isOneTime && <Badge variant="secondary" className="text-xs">Goal</Badge>}
+                                                                {isOneTime && <span className="status-badge status-badge-primary text-xs">Goal</span>}
                                                             </div>
                                                             {activity.description && (
-                                                                <div className="text-sm text-muted-foreground">{activity.description}</div>
+                                                                <div className="text-sm text-gray-500 mt-0.5">{activity.description}</div>
                                                             )}
-                                                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                                                                 {isOneTime ? (
                                                                     <><Target className="h-3 w-3" /> One-time goal</>
                                                                 ) : (
@@ -362,8 +464,17 @@ export default function IntegratedDashboard({
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                        <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
+                                                        <span className="status-badge status-badge-outline status-badge-primary">
+                                                            {activity.pointValue} pts
+                                                        </span>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => navigateToActivityTasks(activity._id!)}
+                                                            title="Manage Tasks"
+                                                            data-ph-event="integrated_dashboard_action"
+                                                            className="rounded-full p-1 h-8 w-8"
+                                                        >
                                                             <ListChecks className="h-4 w-4" />
                                                         </Button>
                                                         {isCompletedToday ? (
@@ -372,6 +483,7 @@ export default function IntegratedDashboard({
                                                                     variant="secondary"
                                                                     size="sm"
                                                                     disabled
+                                                                    className="bg-green-100 text-green-700 rounded-full p-1 h-8 w-8"
                                                                 >
                                                                     <CheckCircle2 className="h-4 w-4" />
                                                                 </Button>
@@ -381,6 +493,7 @@ export default function IntegratedDashboard({
                                                                     onClick={() => undoActivityCompletion(activity._id!)}
                                                                     title="Undo completion"
                                                                     data-ph-event="integrated_dashboard_action"
+                                                                    className="rounded-full p-1 h-8 w-8"
                                                                 >
                                                                     <RotateCcw className="h-4 w-4" />
                                                                 </Button>
@@ -391,6 +504,7 @@ export default function IntegratedDashboard({
                                                                 variant="default"
                                                                 size="sm"
                                                                 data-ph-event="integrated_dashboard_action"
+                                                                className="rounded-full p-1 h-8 w-8 hover:bg-gray-100"
                                                             >
                                                                 <Circle className="h-4 w-4" />
                                                             </Button>
@@ -401,32 +515,38 @@ export default function IntegratedDashboard({
                                         );
                                     });
                                 })()}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                         {/* Today's Tasks (Sub-tasks) */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
+                        <div className="dashboard-card">
+                            <div className="dashboard-card-header flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle className="text-lg">Active Tasks</CardTitle>
-                                    <CardDescription>Manage your to-do items for today</CardDescription>
+                                    <h3 className="text-lg font-medium text-gray-800">Active Tasks</h3>
+                                    <p className="text-sm text-gray-500 mt-1">Manage your to-do items for today</p>
                                 </div>
-                                {/* This button can still open the modal for a quick add if desired, or be removed if all task additions go via /tasks page */}
-                                <Button variant="outline" size="sm" onClick={() => openTodoModal()} data-ph-event="integrated_dashboard_action">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openQuickAddModal()}
+                                    data-ph-event="integrated_dashboard_action"
+                                    className="bg-white hover:bg-gray-50"
+                                >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Quick Add Task
                                 </Button>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
+                            </div>
+                            <div className="dashboard-card-content space-y-3">
                                 {todos.length === 0 ? (
-                                    <p className="text-muted-foreground text-center py-4">
-                                        No tasks yet. Add your first task!
-                                    </p>
+                                    <div className="text-gray-500 text-center py-6 bg-gray-50/50 rounded-md border border-dashed border-gray-200">
+                                        <p>No tasks yet.</p>
+                                        <p className="text-sm mt-1">Add your first task to get started!</p>
+                                    </div>
                                 ) : (
                                     <>
                                         {/* Show pending tasks first */}
                                         {todos.filter(t => !t.isCompleted).slice(0, 5).map((todo) => (
-                                            <div key={todo._id} className={`p-3 rounded-lg border transition-all hover:bg-muted`}>
+                                            <div key={todo._id} className="activity-card">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <Button
@@ -436,23 +556,25 @@ export default function IntegratedDashboard({
                                                             className="p-0 h-auto"
                                                             data-ph-event="integrated_dashboard_action"
                                                         >
-                                                            <Circle className="h-5 w-5" />
+                                                            <Circle className="h-4 w-4 text-gray-400" />
                                                         </Button>
                                                         <div>
-                                                            <div className={`font-medium`}>{todo.title}</div>
+                                                            <div className="font-medium text-gray-800">{todo.title}</div>
                                                             {todo.description && (
-                                                                <div className="text-sm text-muted-foreground">{todo.description}</div>
+                                                                <div className="text-sm text-gray-500 mt-0.5">{todo.description}</div>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <Badge variant={"default"}>Pending</Badge>
+                                                    <span className="status-badge status-badge-outline bg-gray-50 text-gray-600 border-gray-100">
+                                                        Pending
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
 
                                         {/* Show completed tasks for today */}
                                         {todos.filter(t => t.isCompleted).slice(0, 3).map((todo) => (
-                                            <div key={todo._id} className={`p-3 rounded-lg border transition-all bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800`}>
+                                            <div key={todo._id} className="activity-card completed">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <Button
@@ -462,23 +584,25 @@ export default function IntegratedDashboard({
                                                             className="p-0 h-auto"
                                                             data-ph-event="integrated_dashboard_action"
                                                         >
-                                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                                            <CheckCircle2 className="h-4 w-4 text-gray-600" />
                                                         </Button>
                                                         <div>
-                                                            <div className={`font-medium line-through text-green-700 dark:text-green-300`}>{todo.title}</div>
+                                                            <div className="font-medium line-through text-gray-600">{todo.title}</div>
                                                             {todo.description && (
-                                                                <div className="text-sm text-green-600 dark:text-green-400">{todo.description}</div>
+                                                                <div className="text-sm text-gray-500 line-through mt-0.5">{todo.description}</div>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <Badge variant={"secondary"} className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Completed</Badge>
+                                                    <span className="status-badge status-badge-outline bg-gray-50 text-gray-600 border-gray-100">
+                                                        Done
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
 
                                         {/* Show count of remaining tasks if there are more */}
                                         {(todos.filter(t => !t.isCompleted).length > 5 || todos.filter(t => t.isCompleted).length > 3) && (
-                                            <p className="text-sm text-muted-foreground text-center pt-2">
+                                            <p className="text-sm text-gray-500 text-center border-t border-gray-100 mt-3 pt-3">
                                                 {todos.filter(t => !t.isCompleted).length > 5 && `${todos.filter(t => !t.isCompleted).length - 5} more pending tasks`}
                                                 {todos.filter(t => !t.isCompleted).length > 5 && todos.filter(t => t.isCompleted).length > 3 && ' • '}
                                                 {todos.filter(t => t.isCompleted).length > 3 && `${todos.filter(t => t.isCompleted).length - 3} more completed tasks`}
@@ -486,240 +610,368 @@ export default function IntegratedDashboard({
                                         )}
                                     </>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
                 </TabsContent>
 
                 {/* Recurring Activities (Habits) Tab */}
                 <TabsContent value="recurring" className="space-y-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold">All Recurring Activities</h3>
-                        <Button onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action"><Plus className="h-4 w-4 mr-2" /> Add Recurring Activity</Button>
-                    </div>
-                    {recurringActivities.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">No recurring activities defined yet.</p>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {recurringActivities.map((activity) => {
-                                const isCompletedToday = todaysCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
-                                return (
-                                    <Card key={activity._id} className={`transition-all hover:shadow-md ${isCompletedToday ? 'ring-2 ring-green-500' : ''}`}>
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between">
-                                                <CardTitle className="text-lg">{activity.title}</CardTitle>
-                                                <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
-                                            </div>
-                                            {activity.description && (
-                                                <CardDescription>{activity.description}</CardDescription>
-                                            )}
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                <Badge variant="secondary" className="capitalize"><Repeat className="h-3 w-3 mr-1" /> {activity.targetFrequency}</Badge>
-                                                <Badge variant="outline" className="capitalize">{activity.intensity}</Badge>
-                                            </div>
-                                            <div className="flex items-center justify-between flex-wrap gap-2">
-                                                <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)} data-ph-event="integrated_dashboard_action">
-                                                    Edit
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
-                                                    <ListChecks className="h-4 w-4 mr-1" /> Tasks
-                                                </Button>
-                                                {isCompletedToday ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <Button
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            disabled
-                                                        >
-                                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Completed Today
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => undoActivityCompletion(activity._id!)}
-                                                            title="Undo completion"
-                                                            data-ph-event="integrated_dashboard_action"
-                                                        >
-                                                            <RotateCcw className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button
-                                                        onClick={() => completeActivity(activity._id!)}
-                                                        variant="default"
-                                                        size="sm"
-                                                        data-ph-event="integrated_dashboard_action"
-                                                    >
-                                                        <Circle className="h-4 w-4 mr-2" /> Mark Done
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                    <div className="dashboard-card">
+                        <div className="dashboard-card-header flex flex-row items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-800">All Recurring Activities</h3>
+                                <p className="text-sm text-gray-500 mt-1">Habits and recurring tasks you want to maintain</p>
+                            </div>
+                            <Button
+                                onClick={() => openActivityForm()}
+                                data-ph-event="integrated_dashboard_action"
+                                className="bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+                            >
+                                <Plus className="h-4 w-4 mr-2" /> New Habit
+                            </Button>
                         </div>
-                    )}
+                        <div className="dashboard-card-content">
+                            {recurringActivities.length === 0 ? (
+                                <div className="text-gray-500 text-center py-10 bg-gray-50/50 rounded-md border border-dashed border-gray-200">
+                                    <div className="mb-2">
+                                        <Repeat className="h-10 w-10 text-gray-300 mx-auto" />
+                                    </div>
+                                    <p className="font-medium">No recurring activities defined yet</p>
+                                    <p className="text-sm mt-1 max-w-md mx-auto">Habits are activities you perform regularly. Add your first recurring activity to start building consistent habits.</p>
+                                    <Button
+                                        onClick={() => openActivityForm()}
+                                        className="mt-4"
+                                        data-ph-event="integrated_dashboard_action"
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" /> Add Your First Habit
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                    {recurringActivities.map((activity) => {
+                                        const isCompletedToday = todaysCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
+                                        const intensityClass = activity.intensity === 'easy' ? 'intensity-easy' :
+                                            activity.intensity === 'medium' ? 'intensity-medium' : 'intensity-hard';
+
+                                        return (
+                                            <div key={activity._id} className={`activity-card h-full flex flex-col ${isCompletedToday ? 'completed' : ''}`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`intensity-dot ${intensityClass}`} />
+                                                        <h4 className="font-medium text-gray-800">{activity.title}</h4>
+                                                    </div>
+                                                    <Badge variant="outline" className="capitalize status-badge status-badge-info">
+                                                        <Repeat className="h-3 w-3 mr-1" /> {activity.targetFrequency}
+                                                    </Badge>
+                                                </div>
+
+                                                {activity.description && (
+                                                    <p className="text-sm text-gray-600 mb-3">{activity.description}</p>
+                                                )}
+
+                                                <div className="mt-auto pt-3 border-t border-gray-100">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="status-badge status-badge-primary">{activity.pointValue} pts</span>
+                                                        <span className="status-badge status-badge-neutral capitalize">{activity.intensity}</span>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+                                                        <div className="flex items-center gap-1">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => openActivityForm(activity)}
+                                                                className="text-xs h-7 px-2"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => navigateToActivityTasks(activity._id!)}
+                                                                className="text-xs h-7 px-2"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                <ListChecks className="h-3 w-3 mr-1" /> Tasks
+                                                            </Button>
+                                                        </div>
+
+                                                        {isCompletedToday ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    disabled
+                                                                    className="bg-gray-50 text-gray-600 border-gray-100 text-xs h-7"
+                                                                >
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" /> Done Today
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => undoActivityCompletion(activity._id!)}
+                                                                    title="Undo completion"
+                                                                    className="text-xs h-7 px-1"
+                                                                    data-ph-event="integrated_dashboard_action"
+                                                                >
+                                                                    <RotateCcw className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                onClick={() => completeActivity(activity._id!)}
+                                                                variant="default"
+                                                                size="sm"
+                                                                className="text-xs h-7"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                <Circle className="h-3 w-3 mr-1" /> Mark Complete
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* One-Time Goals Tab */}
                 <TabsContent value="goals" className="space-y-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold">One-Time Goals</h3>
-                        <Button onClick={() => openActivityForm()} data-ph-event="integrated_dashboard_action"><Plus className="h-4 w-4 mr-2" /> Add Goal</Button>
-                    </div>
-                    {oneTimeActivities.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">No one-time goals defined yet.</p>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {oneTimeActivities.map((activity) => {
-                                const isCompleted = activityCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
-                                return (
-                                    <Card key={activity._id} className={`transition-all hover:shadow-md ${isCompleted ? 'ring-2 ring-green-500' : ''}`}>
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between">
-                                                <CardTitle className="text-lg">{activity.title}</CardTitle>
-                                                <div className={`w-3 h-3 rounded-full ${getActivityIntensityColor(activity.intensity)}`} />
-                                            </div>
-                                            {activity.description && (
-                                                <CardDescription>{activity.description}</CardDescription>
-                                            )}
-                                            {activity.deadline && (
-                                                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                    <Target className="h-3 w-3" /> Deadline: {format(parseISO(activity.deadline), 'MMM d, yyyy')}
-                                                </div>
-                                            )}
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                <Badge variant="outline" className="capitalize">{activity.intensity}</Badge>
-                                                {activity.deadline && <Badge variant="secondary"><Target className="h-3 w-3 mr-1" /> {format(parseISO(activity.deadline), 'MMM d, yyyy')}</Badge>}
-                                            </div>
-                                            <div className="flex items-center justify-between flex-wrap gap-2">
-                                                <Badge variant="outline">{activity.pointValue} pts</Badge>
-                                                <Button variant="ghost" size="sm" onClick={() => openActivityForm(activity)} data-ph-event="integrated_dashboard_action">
-                                                    Edit
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => navigateToActivityTasks(activity._id!)} title="Manage Tasks" data-ph-event="integrated_dashboard_action">
-                                                    <ListChecks className="h-4 w-4 mr-1" /> Tasks
-                                                </Button>
-                                                {isCompleted ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <Button
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            disabled
-                                                        >
-                                                            <CheckCircle2 className="h-4 w-4 mr-2" /> Completed
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => undoActivityCompletion(activity._id!)}
-                                                            title="Undo completion"
-                                                            data-ph-event="integrated_dashboard_action"
-                                                        >
-                                                            <RotateCcw className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button
-                                                        onClick={() => completeActivity(activity._id!)}
-                                                        variant="default"
-                                                        size="sm"
-                                                        data-ph-event="integrated_dashboard_action"
-                                                    >
-                                                        <Circle className="h-4 w-4 mr-2" /> Mark as Done
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                    <div className="dashboard-card">
+                        <div className="dashboard-card-header flex flex-row items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-800">One-Time Goals</h3>
+                                <p className="text-sm text-gray-500 mt-1">Specific achievements you want to accomplish</p>
+                            </div>                                <Button
+                                onClick={() => openActivityForm()}
+                                data-ph-event="integrated_dashboard_action"
+                                className="bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+                            >
+                                <Plus className="h-4 w-4 mr-2" /> New Goal
+                            </Button>
                         </div>
-                    )}
+                        <div className="dashboard-card-content">
+                            {oneTimeActivities.length === 0 ? (
+                                <div className="text-gray-500 text-center py-10 bg-gray-50/50 rounded-md border border-dashed border-gray-200">
+                                    <div className="mb-2">
+                                        <Target className="h-10 w-10 text-gray-300 mx-auto" />
+                                    </div>
+                                    <p className="font-medium">No one-time goals defined yet</p>
+                                    <p className="text-sm mt-1 max-w-md mx-auto">Goals are one-time accomplishments you're working toward. Set your first goal to start tracking your progress.</p>
+                                    <Button
+                                        onClick={() => openActivityForm()}
+                                        className="mt-4"
+                                        data-ph-event="integrated_dashboard_action"
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" /> Add Your First Goal
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                    {oneTimeActivities.map((activity) => {
+                                        const isCompleted = activityCompletions.some(c => c.activityId === activity._id || (typeof c.activityId === 'object' && c.activityId._id === activity._id));
+                                        const intensityClass = activity.intensity === 'easy' ? 'intensity-easy' :
+                                            activity.intensity === 'medium' ? 'intensity-medium' : 'intensity-hard';
+                                        const hasDeadline = activity.deadline && activity.deadline !== '';
+                                        const deadlineDate = activity.deadline ? parseISO(activity.deadline) : null;
+
+                                        return (
+                                            <div key={activity._id} className={`activity-card h-full flex flex-col ${isCompleted ? 'completed' : ''}`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`intensity-dot ${intensityClass}`} />
+                                                        <h4 className="font-medium text-gray-800">{activity.title}</h4>
+                                                    </div>
+                                                    <Badge variant="outline" className="capitalize status-badge status-badge-primary">
+                                                        <Target className="h-3 w-3 mr-1" /> Goal
+                                                    </Badge>
+                                                </div>
+
+                                                {activity.description && (
+                                                    <p className="text-sm text-gray-600 mb-3">{activity.description}</p>
+                                                )}
+
+                                                <div className="mt-auto pt-3 border-t border-gray-100">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="status-badge status-badge-primary">{activity.pointValue} pts</span>
+                                                        {hasDeadline && deadlineDate && (
+                                                            <span className="text-xs text-gray-600 flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3" /> Due: {format(deadlineDate, 'MMM d, yyyy')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+                                                        <div className="flex items-center gap-1">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => openActivityForm(activity)}
+                                                                className="text-xs h-7 px-2"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => navigateToActivityTasks(activity._id!)}
+                                                                className="text-xs h-7 px-2"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                <ListChecks className="h-3 w-3 mr-1" /> Tasks
+                                                            </Button>
+                                                        </div>
+
+                                                        {isCompleted ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    disabled
+                                                                    className="bg-gray-50 text-gray-600 border-gray-100 text-xs h-7"
+                                                                >
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" /> Completed
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => undoActivityCompletion(activity._id!)}
+                                                                    title="Undo completion"
+                                                                    className="text-xs h-7 px-1"
+                                                                    data-ph-event="integrated_dashboard_action"
+                                                                >
+                                                                    <RotateCcw className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                onClick={() => completeActivity(activity._id!)}
+                                                                variant="default"
+                                                                size="sm"
+                                                                className="text-xs h-7"
+                                                                data-ph-event="integrated_dashboard_action"
+                                                            >
+                                                                <Circle className="h-3 w-3 mr-1" /> Mark Complete
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Tab Content for All Tasks */}
                 <TabsContent value="all-tasks">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex justify-between items-center">
-                                <CardTitle>All Tasks</CardTitle>
+                    <div className="dashboard-card">
+                        <div className="dashboard-card-header flex flex-row items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-800">All Tasks</h3>
+                                <p className="text-sm text-gray-500 mt-1">View and manage all your tasks across all activities</p>
                             </div>
-                            <CardDescription>View and manage all your tasks across all activities.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openQuickAddModal()}
+                                data-ph-event="integrated_dashboard_action"
+                                className="bg-white hover:bg-gray-50"
+                            >
+                                <Plus className="h-4 w-4 mr-2" /> Add Task
+                            </Button>
+                        </div>
+                        <div className="dashboard-card-content">
                             <TodoComponent userId={userId} /> {/* General TodoComponent for all tasks */}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Tab Content for Archived Tasks */}
                 <TabsContent value="archived">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex justify-between items-center">
-                                <CardTitle>Archived Tasks</CardTitle>
+                    <div className="dashboard-card">
+                        <div className="dashboard-card-header flex flex-row items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-800">Archived Tasks</h3>
+                                <p className="text-sm text-gray-500 mt-1">View and restore your archived tasks</p>
                             </div>
-                            <CardDescription>View and restore your archived tasks.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                        </div>
+                        <div className="dashboard-card-content">
                             {archivedTodos.length === 0 ? (
-                                <p className="text-muted-foreground text-center py-8">No archived tasks found.</p>
+                                <div className="text-gray-500 text-center py-10 bg-gray-50/50 rounded-md border border-dashed border-gray-200">
+                                    <div className="mb-2">
+                                        <svg className="h-10 w-10 text-gray-300 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                        </svg>
+                                    </div>
+                                    <p className="font-medium">No archived tasks found</p>
+                                    <p className="text-sm mt-1">When you archive tasks, they will appear here</p>
+                                </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {archivedTodos.map((todo: any) => (
-                                        <div key={todo._id} className="p-3 rounded-lg border bg-gray-50 dark:bg-gray-900/20">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <CheckCircle2 className="h-5 w-5 text-gray-400" />
-                                                        <div>
-                                                            <div className="font-medium text-gray-600 dark:text-gray-400 line-through">
+                                    {archivedTodos.map((todo: any) => {
+                                        const archivedDate = todo.archivedAt ? new Date(todo.archivedAt) : null;
+
+                                        return (
+                                            <div key={todo._id} className="activity-card bg-gray-50 border-gray-100">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <CheckCircle2 className="h-5 w-5 text-gray-300" />
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-400 line-through">
                                                                 {todo.title}
                                                             </div>
                                                             {todo.description && (
-                                                                <div className="text-sm text-gray-500 dark:text-gray-500">
+                                                                <div className="text-sm text-gray-400 line-through">
                                                                     {todo.description}
                                                                 </div>
                                                             )}
-                                                            {todo.activityId?.title && (
-                                                                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                                    Activity: {todo.activityId.title}
-                                                                </div>
-                                                            )}
-                                                            {todo.archivedAt && (
-                                                                <div className="text-xs text-gray-500 dark:text-gray-500">
-                                                                    Archived: {format(new Date(todo.archivedAt), 'MMM d, yyyy')}
-                                                                </div>
-                                                            )}
+                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                                                                {todo.activityId?.title && (
+                                                                    <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-gray-300"></span>
+                                                                        {todo.activityId.title}
+                                                                    </div>
+                                                                )}
+                                                                {archivedDate && (
+                                                                    <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-gray-300"></span>
+                                                                        Archived: {format(archivedDate, 'MMM d, yyyy')}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="text-gray-500">Archived</Badge>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => restoreArchivedTodo(todo._id)}
-                                                        title="Restore task"
-                                                        data-ph-event="integrated_dashboard_action"
-                                                    >
-                                                        <RotateCcw className="h-4 w-4" />
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="status-badge status-badge-neutral">Archived</span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => restoreArchivedTodo(todo._id)}
+                                                            title="Restore task"
+                                                            data-ph-event="integrated_dashboard_action"
+                                                            className="h-7 w-7 p-0 rounded-full"
+                                                        >
+                                                            <RotateCcw className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
             </Tabs>
 
@@ -749,6 +1001,26 @@ export default function IntegratedDashboard({
                     </DialogContent>
                 </Dialog>
             )}
+
+            {/* Quick Add Task Modal */}
+            <Dialog open={isQuickAddModalOpen} onOpenChange={setIsQuickAddModalOpen}>
+                <DialogContent className="sm:max-w-[525px]">
+                    <DialogHeader>
+                        <DialogTitle>Quick Add Task</DialogTitle>
+                        <DialogDescription>
+                            Add a new task with or without associating it to a goal or habit.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <QuickAddTodo
+                        userId={userId}
+                        onSuccess={() => {
+                            setIsQuickAddModalOpen(false);
+                            fetchData(); // Refresh all data when a task is added
+                        }}
+                        onCancel={() => setIsQuickAddModalOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

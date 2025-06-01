@@ -119,7 +119,13 @@ export async function PUT(
       }
     }
     if (activityId !== undefined) { // Changed from goalId
-      todo.activityId = activityId; // Changed from goalId
+      // Handle special case when activityId is null or '000000000000000000000000'
+      if (activityId === null || activityId === '000000000000000000000000' || activityId === '') {
+        // Mongoose will not allow deleting a required field, so use special placeholder ID 
+        todo.activityId = '000000000000000000000000';
+      } else {
+        todo.activityId = activityId;
+      }
     }
     if (isRepetitive !== undefined) {
       todo.isRepetitive = isRepetitive;
