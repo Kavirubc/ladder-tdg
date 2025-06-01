@@ -352,8 +352,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
     };
 
     const months = [
-        "June 2025", "July 2025", "August 2025",
-        "September 2025", "October 2025", "November 2025", "December 2025"
+        "June 2025"
     ];
 
     if (loading) {

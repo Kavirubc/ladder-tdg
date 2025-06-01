@@ -1,3 +1,5 @@
+"use server";
+
 import mongoose from 'mongoose';
 
 // Define interface for the global MongoDB cache
