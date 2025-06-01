@@ -174,9 +174,9 @@ export default function IntegratedDashboard({
 
     const getActivityIntensityColor = (intensity: string) => {
         switch (intensity) {
-            case 'easy': return 'bg-green-500';
-            case 'medium': return 'bg-yellow-500';
-            case 'hard': return 'bg-red-500';
+            case 'easy': return 'bg-gray-400';
+            case 'medium': return 'bg-gray-500';
+            case 'hard': return 'bg-gray-600';
             default: return 'bg-gray-500';
         }
     };
@@ -315,7 +315,7 @@ export default function IntegratedDashboard({
             <div className="dashboard-card">
                 <div className="dashboard-card-header">
                     <h2 className="flex items-center gap-2 text-xl font-medium text-gray-800">
-                        <Calendar className="h-5 w-5 text-indigo-500" />
+                        <Calendar className="h-5 w-5 text-gray-500" />
                         Today&apos;s Overview - {format(new Date(), 'EEEE, MMMM d')}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
@@ -325,15 +325,15 @@ export default function IntegratedDashboard({
                 <div className="dashboard-card-content">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="dashboard-stat">
-                            <div className="dashboard-stat-value text-indigo-600">{todaysCompletions.length}</div>
+                            <div className="dashboard-stat-value text-gray-700">{todaysCompletions.length}</div>
                             <div className="dashboard-stat-label">Activities Completed</div>
                         </div>
                         <div className="dashboard-stat">
-                            <div className="dashboard-stat-value text-green-600">{todos.filter(t => t.isCompleted).length}</div>
+                            <div className="dashboard-stat-value text-gray-700">{todos.filter(t => t.isCompleted).length}</div>
                             <div className="dashboard-stat-label">Tasks Completed</div>
                         </div>
                         <div className="dashboard-stat">
-                            <div className="dashboard-stat-value text-amber-600">{progressStats?.totalPoints ?? '0'}</div>
+                            <div className="dashboard-stat-value text-gray-700">{progressStats?.totalPoints ?? '0'}</div>
                             <div className="dashboard-stat-label">Total Points</div>
                         </div>
                     </div>
@@ -348,7 +348,7 @@ export default function IntegratedDashboard({
                 >
                     <TabsTrigger
                         value="today"
-                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
                         aria-label="Today's Focus tab"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /><path d="M10 16h4" /></svg>
@@ -356,7 +356,7 @@ export default function IntegratedDashboard({
                     </TabsTrigger>
                     <TabsTrigger
                         value="recurring"
-                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
                         aria-label="Recurring activities tab"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3v2" /><path d="M10 18H7" /><path d="M7 14v4" /><path d="m14 10-3.5 3.5" /><path d="M10 13.5 7 17" /><path d="M17 21v-2" /><path d="M21 7V4a1 1 0 0 0-1-1h-3" /><path d="M3 7v3a1 1 0 0 0 1 1h3" /><path d="M21 17v3a1 1 0 0 1-1 1h-3" /><path d="M3 17v-3a1 1 0 0 1 1-1h3" /></svg>
@@ -364,7 +364,7 @@ export default function IntegratedDashboard({
                     </TabsTrigger>
                     <TabsTrigger
                         value="goals"
-                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
                         aria-label="One-Time Goals tab"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
@@ -372,7 +372,7 @@ export default function IntegratedDashboard({
                     </TabsTrigger>
                     <TabsTrigger
                         value="all-tasks"
-                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
                         aria-label="All Tasks tab"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 12H3" /><path d="m16 6-4 6 4 6" /><path d="M21 12h-5" /></svg>
@@ -380,7 +380,7 @@ export default function IntegratedDashboard({
                     </TabsTrigger>
                     <TabsTrigger
                         value="archived"
-                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="flex-1 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
                         aria-label="Archived Tasks tab"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></svg>
@@ -449,7 +449,7 @@ export default function IntegratedDashboard({
                                                         <div>
                                                             <div className="font-medium text-gray-800 flex items-center gap-2">
                                                                 {activity.title}
-                                                                {isOneTime && <span className="status-badge status-badge-outline status-badge-primary text-xs">Goal</span>}
+                                                                {isOneTime && <span className="status-badge status-badge-primary text-xs">Goal</span>}
                                                             </div>
                                                             {activity.description && (
                                                                 <div className="text-sm text-gray-500 mt-0.5">{activity.description}</div>
@@ -565,7 +565,7 @@ export default function IntegratedDashboard({
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <span className="status-badge status-badge-outline bg-amber-50 text-amber-600 border-amber-100">
+                                                    <span className="status-badge status-badge-outline bg-gray-50 text-gray-600 border-gray-100">
                                                         Pending
                                                     </span>
                                                 </div>
@@ -584,7 +584,7 @@ export default function IntegratedDashboard({
                                                             className="p-0 h-auto"
                                                             data-ph-event="integrated_dashboard_action"
                                                         >
-                                                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                                            <CheckCircle2 className="h-4 w-4 text-gray-600" />
                                                         </Button>
                                                         <div>
                                                             <div className="font-medium line-through text-gray-600">{todo.title}</div>
@@ -593,7 +593,7 @@ export default function IntegratedDashboard({
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <span className="status-badge status-badge-outline bg-green-50 text-green-600 border-green-100">
+                                                    <span className="status-badge status-badge-outline bg-gray-50 text-gray-600 border-gray-100">
                                                         Done
                                                     </span>
                                                 </div>
@@ -626,7 +626,7 @@ export default function IntegratedDashboard({
                             <Button
                                 onClick={() => openActivityForm()}
                                 data-ph-event="integrated_dashboard_action"
-                                className="bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100"
+                                className="bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
                             >
                                 <Plus className="h-4 w-4 mr-2" /> New Habit
                             </Button>
@@ -704,7 +704,7 @@ export default function IntegratedDashboard({
                                                                     variant="secondary"
                                                                     size="sm"
                                                                     disabled
-                                                                    className="bg-green-50 text-green-600 border-green-100 text-xs h-7"
+                                                                    className="bg-gray-50 text-gray-600 border-gray-100 text-xs h-7"
                                                                 >
                                                                     <CheckCircle2 className="h-3 w-3 mr-1" /> Done Today
                                                                 </Button>
@@ -748,11 +748,10 @@ export default function IntegratedDashboard({
                             <div>
                                 <h3 className="text-lg font-medium text-gray-800">One-Time Goals</h3>
                                 <p className="text-sm text-gray-500 mt-1">Specific achievements you want to accomplish</p>
-                            </div>
-                            <Button
+                            </div>                                <Button
                                 onClick={() => openActivityForm()}
                                 data-ph-event="integrated_dashboard_action"
-                                className="bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100"
+                                className="bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
                             >
                                 <Plus className="h-4 w-4 mr-2" /> New Goal
                             </Button>
@@ -789,7 +788,7 @@ export default function IntegratedDashboard({
                                                         <div className={`intensity-dot ${intensityClass}`} />
                                                         <h4 className="font-medium text-gray-800">{activity.title}</h4>
                                                     </div>
-                                                    <Badge variant="outline" className="capitalize status-badge status-badge-warning">
+                                                    <Badge variant="outline" className="capitalize status-badge status-badge-primary">
                                                         <Target className="h-3 w-3 mr-1" /> Goal
                                                     </Badge>
                                                 </div>
@@ -836,7 +835,7 @@ export default function IntegratedDashboard({
                                                                     variant="secondary"
                                                                     size="sm"
                                                                     disabled
-                                                                    className="bg-green-50 text-green-600 border-green-100 text-xs h-7"
+                                                                    className="bg-gray-50 text-gray-600 border-gray-100 text-xs h-7"
                                                                 >
                                                                     <CheckCircle2 className="h-3 w-3 mr-1" /> Completed
                                                                 </Button>

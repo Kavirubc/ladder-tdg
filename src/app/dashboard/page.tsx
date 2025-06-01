@@ -21,12 +21,12 @@ export default async function DashboardPage() {
       <div className="dashboard-container">
         <div className="welcome-banner">
           <h1>
-            Welcome, <span className="text-indigo-600">{session.user.name}</span>
+            Welcome, <span className="text-gray-800">{session.user.name}</span>
           </h1>
           <p className="text-gray-500">Your personalized dashboard to track progress and manage activities</p>
         </div>
 
-        {/* Enhanced Application Banner with cleaner design */}
+        {/* Simplified Application Banner with Notion-like design */}
         <div className="application-banner">
           <div className="application-banner-content">
             <h2 className="flex items-center gap-2">
