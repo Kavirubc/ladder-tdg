@@ -30,7 +30,7 @@ export interface Todo {
     _id: string;
     title: string;
     description?: string;
-    activityId: string; // Reference to the parent Activity
+    activityId?: string | Activity; // Reference to the parent Activity (optional) - can be populated
     isCompleted: boolean;
     isArchived?: boolean;
     archivedAt?: string; // Or Date

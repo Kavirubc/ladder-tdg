@@ -11,6 +11,7 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import type { Activity, ActivityCompletion, Todo, ActivityProgressStats } from '@/types/activity';
 import ActivityForm from '@/components/ActivityForm'; // Import the ActivityForm component
 import TodoComponent from '@/components/TodoComponent'; // Import TodoComponent
+import QuickAddTodo from '@/components/QuickAddTodo'; // Import the new QuickAddTodo component
 import {
     Dialog,
     DialogContent,
@@ -36,6 +37,7 @@ export default function IntegratedDashboard({
     const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
     const [selectedActivityForTodo, setSelectedActivityForTodo] = useState<string | undefined>(undefined);
     const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+    const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | undefined>(undefined);
 
     const fetchData = useCallback(async () => {
@@ -192,6 +194,10 @@ export default function IntegratedDashboard({
     const openTodoModal = (activityId?: string) => {
         setSelectedActivityForTodo(activityId);
         setIsTodoModalOpen(true);
+    };
+
+    const openQuickAddModal = () => {
+        setIsQuickAddModalOpen(true);
     };
 
     const navigateToActivityTasks = (activityId: string) => {
@@ -522,7 +528,7 @@ export default function IntegratedDashboard({
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => openTodoModal()}
+                                    onClick={() => openQuickAddModal()}
                                     data-ph-event="integrated_dashboard_action"
                                     className="bg-white hover:bg-gray-50"
                                 >
@@ -878,7 +884,7 @@ export default function IntegratedDashboard({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openTodoModal()}
+                                onClick={() => openQuickAddModal()}
                                 data-ph-event="integrated_dashboard_action"
                                 className="bg-white hover:bg-gray-50"
                             >
@@ -996,6 +1002,26 @@ export default function IntegratedDashboard({
                     </DialogContent>
                 </Dialog>
             )}
+
+            {/* Quick Add Task Modal */}
+            <Dialog open={isQuickAddModalOpen} onOpenChange={setIsQuickAddModalOpen}>
+                <DialogContent className="sm:max-w-[525px]">
+                    <DialogHeader>
+                        <DialogTitle>Quick Add Task</DialogTitle>
+                        <DialogDescription>
+                            Add a new task with or without associating it to a goal or habit.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <QuickAddTodo
+                        userId={userId}
+                        onSuccess={() => {
+                            setIsQuickAddModalOpen(false);
+                            fetchData(); // Refresh all data when a task is added
+                        }}
+                        onCancel={() => setIsQuickAddModalOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

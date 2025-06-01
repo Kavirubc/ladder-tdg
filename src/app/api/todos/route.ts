@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch todos for the current user, optionally filtered by activityId
-    const todos = await Todo.find(query).sort({ createdAt: -1 });
+    const todos = await Todo.find(query).populate('activityId').sort({ createdAt: -1 });
 
     return NextResponse.json({ todos }, { status: 200 });
   } catch (error) {
@@ -79,12 +79,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!activityId) { // Changed from goalId
-      return NextResponse.json(
-        { message: 'Activity ID is required' }, // Changed from Goal ID
-        { status: 400 }
-      );
-    }
+    // Allow tasks without an activity (standalone tasks)
+    // if (!activityId) {
+    //   return NextResponse.json(
+    //     { message: 'Activity ID is required' },
+    //     { status: 400 }
+    //   );
+    // }
 
     await connectDB();
 
@@ -92,11 +93,18 @@ export async function POST(req: NextRequest) {
     const todoData: any = {
       title,
       description,
-      activityId, // Changed from goalId
       user: session.user.id,
       isRepetitive: isRepetitive || false,
       lastShown: new Date()
     };
+
+    // Only include activityId if it exists and is not 'none'
+    if (activityId && activityId !== 'none') {
+      todoData.activityId = activityId;
+    } else {
+      // Explicitly omit the field rather than setting it to null
+      delete todoData.activityId;
+    }
 
     const todo = await Todo.create(todoData);
 

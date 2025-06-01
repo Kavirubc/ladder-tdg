@@ -12,10 +12,11 @@ const TodoSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Description cannot be more than 500 characters'],
   },
-  activityId: { // Changed from goalId to activityId
+  // Allowing tasks without an activityId
+  activityId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Activity', // Changed from 'Goal' to 'Activity'
-    required: true, // A todo must be related to a specific activity
+    ref: 'Activity',
+    // Note: not marking as required so that standalone tasks can be created
   },
   isCompleted: {
     type: Boolean,

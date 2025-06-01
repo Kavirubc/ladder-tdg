@@ -123,23 +123,32 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
     fetchData();
   }, [userId, activityId, updateOptimisticTodos]);
 
-  const commonTodoFields = (values: z.infer<typeof formSchema>, currentActivityId: string) => ({
-    title: values.title,
-    description: values.description || '',
-    user: userId,
-    activityId: currentActivityId,
-    // Default values for new fields from TodoType, adjust as necessary
-    category: 'General',
-    priority: 'Medium',
-    // dueDate: undefined, // Or handle as needed
-  });
+  const commonTodoFields = (values: z.infer<typeof formSchema>, currentActivityId?: string) => {
+    const todoFields: any = {
+      title: values.title,
+      description: values.description || '',
+      user: userId,
+      // Default values for new fields from TodoType, adjust as necessary
+      category: 'General',
+      priority: 'Medium',
+      // dueDate: undefined, // Or handle as needed
+    };
+
+    // Only include activityId if it exists
+    if (currentActivityId) {
+      todoFields.activityId = currentActivityId;
+    }
+
+    return todoFields;
+  };
 
   const addTodo = async (values: z.infer<typeof formSchema>) => {
-    if (!activityId) {
-      form.setError("root", { type: "manual", message: "An activity context is required to add tasks." });
-      console.error("Activity ID is required to add a task.");
-      return;
-    }
+    // Allow tasks without an activity
+    // if (!activityId) {
+    //   form.setError("root", { type: "manual", message: "An activity context is required to add tasks." });
+    //   console.error("Activity ID is required to add a task.");
+    //   return;
+    // }
 
     const newTodoServerData = {
       ...commonTodoFields(values, activityId),
@@ -284,16 +293,30 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
   const saveEdit = async (values: z.infer<typeof formSchema>) => {
     if (!editingTodo) return;
 
+    // Get activity ID, handling both string and object cases
     const currentActivityId = editingTodo.activityId;
-    if (!currentActivityId) {
-      console.error("Activity ID is missing from the todo being edited.");
-      form.setError("root", { type: "manual", message: "Cannot save task: Activity association is missing." });
-      return;
+    let activityIdString: string | undefined;
+
+    if (currentActivityId) {
+      // Convert Activity object to string ID if necessary
+      if (typeof currentActivityId === 'string') {
+        // It's already a string ID
+        activityIdString = currentActivityId;
+      } else if (currentActivityId._id) {
+        // It's an Activity object with _id
+        activityIdString = currentActivityId._id;
+      }
+
+      // Check if it's our placeholder ObjectId for standalone tasks
+      if (activityIdString === '000000000000000000000000') {
+        // This is a standalone task, don't pass an activityId
+        activityIdString = undefined;
+      }
     }
 
     const updatedTodoPayload = {
-      ...commonTodoFields(values, currentActivityId),
-      // Retain fields not in form but part of Todo, like isCompleted, createdAt
+      ...commonTodoFields(values, activityIdString),
+      // Retain fields not in form but part of Todo
       isCompleted: editingTodo.isCompleted,
       createdAt: editingTodo.createdAt,
     };
@@ -372,10 +395,6 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
           <Button
             data-ph-event="todo_action"
             onClick={() => {
-              if (!activityId && !isModal) {
-                alert("To add a new task here, please ensure an activity context is available or use the 'Add Task' button within a specific activity.");
-                return;
-              }
               setEditingTodo(null);
               form.reset({ title: '', description: '' });
               setDialogOpen(true);
@@ -411,9 +430,20 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
                       {todo.description}
                     </p>
                   )}
-                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    Created: {new Date(todo.createdAt || Date.now()).toLocaleDateString()}
-                    {todo.isRepetitive && <Badge variant="outline" className="ml-2">Repetitive</Badge>}
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex flex-wrap items-center gap-2">
+                    <span>Created: {new Date(todo.createdAt || Date.now()).toLocaleDateString()}</span>
+                    {todo.isRepetitive && <Badge variant="outline">Repetitive</Badge>}
+                    {todo.activityId &&
+                      // Check if it's not our placeholder ObjectId 
+                      (typeof todo.activityId === 'string' ?
+                        (todo.activityId !== '000000000000000000000000') :
+                        (todo.activityId._id !== '000000000000000000000000')) && (
+                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                          {typeof todo.activityId === 'string' ?
+                            'Linked to activity' :
+                            `Goal: ${(todo.activityId as Activity).title}`}
+                        </Badge>
+                      )}
                   </div>
                 </div>
               </div>
@@ -443,17 +473,12 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
                 ? `Editing task: ${editingTodo.title}. Make your changes below.`
                 : activityId
                   ? 'Adding a new task to the selected activity. Fill in the details below.'
-                  : 'Please select an activity before adding a task. (This message indicates a potential configuration issue if no activity is selected.)'}
+                  : 'Adding a new standalone task. Fill in the details below.'}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-              {!activityId && !editingTodo && (
-                <div className="text-sm text-red-600 dark:text-red-400 p-2 my-2 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20">
-                  <strong>Action Required:</strong> An activity must be associated with this task.
-                  This form currently requires an activity to be pre-selected (e.g., by opening it from an activity's detail page).
-                </div>
-              )}
+              {/* Note: Tasks can now be created without an activity */}
               {form.formState.errors.root && (
                 <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
               )}
@@ -485,7 +510,7 @@ export default function TodoComponent({ userId, activityId, isModal }: TodoCompo
               />
               <Button
                 data-ph-event="todo_action"
-                type="submit" disabled={(!activityId && !editingTodo) || pendingActions.size > 0 || form.formState.isSubmitting}>
+                type="submit" disabled={pendingActions.size > 0 || form.formState.isSubmitting}>
                 {pendingActions.size > 0 || form.formState.isSubmitting ? 'Saving...' : (editingTodo ? 'Save Changes' : 'Add Task')}
               </Button>
             </form>
