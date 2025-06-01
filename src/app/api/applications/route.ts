@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             if (!previousParticipation) {
                 return NextResponse.json({ error: 'Previous participation info is required' }, { status: 400 });
             }
-            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
+            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'season3' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
                 return NextResponse.json({ error: 'Please explain why you couldn\'t complete previous sessions' }, { status: 400 });
             }
             if (!projectStage) {
@@ -258,7 +258,7 @@ export async function PUT(request: NextRequest) {
             if (!previousParticipation) {
                 return NextResponse.json({ error: 'Previous participation info is required' }, { status: 400 });
             }
-            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
+            if ((previousParticipation === 'season1' || previousParticipation === 'season2' || previousParticipation === 'season3' || previousParticipation === 'both') && !previousParticipationReason?.trim()) {
                 return NextResponse.json({ error: 'Please explain why you couldn\'t complete previous sessions' }, { status: 400 });
             }
             if (!projectStage) {

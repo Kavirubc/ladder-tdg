@@ -28,7 +28,7 @@ export interface IApplication extends Document {
     projectChallenges: string; // New
     goalByDecember: string; // New
     measureSuccess: string; // New
-    previousParticipation: 'season1' | 'season2' | 'both' | 'none'; // New
+    previousParticipation: 'season1' | 'season2' | 'season3' | 'both' | 'none'; // New
     previousParticipationReason?: string; // New
     projectStage: 'idea' | 'planning' | 'early_dev' | 'mid_dev' | 'near_completion' | 'scaling'; // New
     commitmentUnderstanding: 'yes_all' | 'need_clarification'; // New
@@ -113,14 +113,14 @@ const ApplicationSchema = new Schema<IApplication>({
     measureSuccess: { type: String }, // New
     previousParticipation: {
         type: String,
-        enum: ['season1', 'season2', 'both', 'none'],
+        enum: ['season1', 'season2', 'season3', 'both', 'none'],
         validate: {
             validator: function (v: string) {
                 // Allow undefined/null for drafts, but validate enum for submitted applications
                 if (!v) return true;
-                return ['season1', 'season2', 'both', 'none'].includes(v);
+                return ['season1', 'season2', 'season3', 'both', 'none'].includes(v);
             },
-            message: 'previousParticipation must be one of: season1, season2, both, none'
+            message: 'previousParticipation must be one of: season1, season2, season3, both, none'
         }
     }, // New
     previousParticipationReason: { type: String }, // New

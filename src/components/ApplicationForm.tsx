@@ -60,7 +60,7 @@ interface FormData {
     projectChallenges: string;
     goalByDecember: string;
     measureSuccess: string;
-    previousParticipation: 'season1' | 'season2' | 'both' | 'none' | '';
+    previousParticipation: 'season1' | 'season2' | 'season3' | 'both' | 'none' | '';
     previousParticipationReason?: string;
     projectStage: 'idea' | 'planning' | 'early_dev' | 'mid_dev' | 'near_completion' | 'scaling' | '';
     commitmentUnderstanding: 'yes_all' | 'need_clarification' | '';
@@ -379,7 +379,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                     setMessage({ type: 'error', text: 'Please answer about previous participation.' });
                     return false;
                 }
-                if ((formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'both') && isEmpty(formData.previousParticipationReason)) {
+                if ((formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'season3' || formData.previousParticipation === 'both') && isEmpty(formData.previousParticipationReason)) {
                     setMessage({ type: 'error', text: 'Please explain why you couldn\'t complete previous sessions.' });
                     return false;
                 }
@@ -593,10 +593,10 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
             <div className="md:min-w-4xl max-w-4xl w-full">
                 {formData.status && formData.status !== 'draft' && (
                     <div className={`p-3 mb-6 rounded-md ${formData.status === 'submitted' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                            formData.status === 'reviewed' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                                formData.status === 'accepted' ? 'bg-green-50 text-green-700 border border-green-100' :
-                                    formData.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-100' :
-                                        'bg-gray-50 text-gray-700 border border-gray-100'
+                        formData.status === 'reviewed' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                            formData.status === 'accepted' ? 'bg-green-50 text-green-700 border border-green-100' :
+                                formData.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-100' :
+                                    'bg-gray-50 text-gray-700 border border-gray-100'
                         }`}>
                         <div className="flex items-center gap-2.5">
                             {getStatusIcon(formData.status)}
@@ -881,7 +881,7 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {(formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'both') && (
+                                {(formData.previousParticipation === 'season1' || formData.previousParticipation === 'season2' || formData.previousParticipation === 'season3' || formData.previousParticipation === 'both') && (
                                     <div className="space-y-1.5 mb-4">
                                         <Label htmlFor="previousParticipationReason" className="text-sm">If you participated before, what prevented you from completing all sessions? *</Label>
                                         <Textarea id="previousParticipationReason" name="previousParticipationReason" value={formData.previousParticipationReason} onChange={handleChange} disabled={isReadOnly} required className="resize-none bg-white" />
