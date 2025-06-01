@@ -530,13 +530,13 @@ export default function ApplicationForm({ session }: ApplicationFormProps) {
                                     <Briefcase className="h-6 w-6 text-primary" /> Experience & Background
                                 </h2>
                                 <div className="space-y-2">
-                                    <Label>Have you participated in our previous seasons (Season 1 or 2)? *</Label>
+                                    <Label>Have you participated in our previous seasons (Season 1,2 or 3)? *</Label>
                                     <Select name="previousParticipation" onValueChange={(value) => handleSelectChange("previousParticipation", value)} value={formData.previousParticipation} disabled={isReadOnly} required>
                                         <SelectTrigger><SelectValue placeholder="Select your experience" /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="season1">Yes, Season 1</SelectItem>
-                                            <SelectItem value="season2">Yes, Season 2</SelectItem>
-                                            <SelectItem value="both">Yes, both seasons</SelectItem>
+                                            <SelectItem value="season1">Yes, Season 1 and 2 (Online Sessions)</SelectItem>
+                                            <SelectItem value="season3">Yes, Season 3 (Physical Sessions)</SelectItem>
+                                            <SelectItem value="both">Yes, all Season 1,2 & 3</SelectItem>
                                             <SelectItem value="none">No, this is my first time</SelectItem>
                                         </SelectContent>
                                     </Select>
