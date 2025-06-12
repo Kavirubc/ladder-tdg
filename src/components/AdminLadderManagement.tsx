@@ -613,8 +613,8 @@ export default function AdminLadderManagement() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex space-x-2">
-                                                    <Button 
-                                                        variant="outline" 
+                                                    <Button
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => handleViewSubmission(submission._id)}
                                                     >
@@ -667,9 +667,9 @@ export default function AdminLadderManagement() {
                                 <div>
                                     <Label className="text-sm font-medium text-gray-600">Status</Label>
                                     <div className="flex items-center space-x-2 mt-1">
-                                        <Badge 
-                                            variant={viewingSubmission.status === 'approved' ? 'default' : 
-                                                    viewingSubmission.status === 'rejected' ? 'destructive' : 'secondary'}
+                                        <Badge
+                                            variant={viewingSubmission.status === 'approved' ? 'default' :
+                                                viewingSubmission.status === 'rejected' ? 'destructive' : 'secondary'}
                                         >
                                             {viewingSubmission.status.charAt(0).toUpperCase() + viewingSubmission.status.slice(1)}
                                         </Badge>
@@ -681,8 +681,8 @@ export default function AdminLadderManagement() {
                                 <div>
                                     <Label className="text-sm font-medium text-gray-600">Submitted</Label>
                                     <p className="text-sm">
-                                        {viewingSubmission.submittedAt ? 
-                                            new Date(viewingSubmission.submittedAt).toLocaleDateString() : 
+                                        {viewingSubmission.submittedAt ?
+                                            new Date(viewingSubmission.submittedAt).toLocaleDateString() :
                                             'Not submitted'
                                         }
                                     </p>
@@ -690,8 +690,8 @@ export default function AdminLadderManagement() {
                                 <div>
                                     <Label className="text-sm font-medium text-gray-600">Reviewed</Label>
                                     <p className="text-sm">
-                                        {viewingSubmission.reviewedAt ? 
-                                            new Date(viewingSubmission.reviewedAt).toLocaleDateString() : 
+                                        {viewingSubmission.reviewedAt ?
+                                            new Date(viewingSubmission.reviewedAt).toLocaleDateString() :
                                             'Not reviewed'
                                         }
                                     </p>
