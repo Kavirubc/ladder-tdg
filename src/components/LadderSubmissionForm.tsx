@@ -58,7 +58,7 @@ interface LadderSubmissionFormProps {
 
 export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps) {
     const router = useRouter();
-    const [question, setQuestion] = useState<LadderQuestion | null>(null);
+    const [questions, setQuestions] = useState<LadderQuestion[]>([]);
     const [submission, setSubmission] = useState<LadderSubmission | null>(null);
     const [formData, setFormData] = useState<{ [key: string]: any }>({});
     const [loading, setLoading] = useState(true);
@@ -74,19 +74,19 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
         try {
             setLoading(true);
 
-            // Load question for the week
+            // Load questions for the week
             const questionRes = await fetch(`/api/ladder/questions?week=${week}`);
             if (!questionRes.ok) {
-                throw new Error('Failed to load question');
+                throw new Error('Failed to load questions');
             }
             const questionData = await questionRes.json();
 
-            if (!questionData.question) {
+            if (!questionData.questions || questionData.questions.length === 0) {
                 setMessage({ type: 'error', text: 'No questions available for this week yet.' });
                 return;
             }
 
-            setQuestion(questionData.question);
+            setQuestions(questionData.questions);
 
             // Load existing submission
             const submissionRes = await fetch(`/api/ladder/submissions?week=${week}`);
@@ -121,28 +121,30 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
     };
 
     const validateForm = (): boolean => {
-        if (!question) return false;
+        if (!questions || questions.length === 0) return false;
 
-        for (const field of question.fields) {
-            if (field.required && (!formData[field.id] || formData[field.id] === '')) {
-                setMessage({ type: 'error', text: `${field.label} is required.` });
-                return false;
-            }
+        for (const question of questions) {
+            for (const field of question.fields) {
+                if (field.required && (!formData[field.id] || formData[field.id] === '')) {
+                    setMessage({ type: 'error', text: `${field.label} is required.` });
+                    return false;
+                }
 
-            if (field.validation) {
-                const value = formData[field.id];
-                if (value && typeof value === 'string') {
-                    if (field.validation.minLength && value.length < field.validation.minLength) {
-                        setMessage({ type: 'error', text: `${field.label} must be at least ${field.validation.minLength} characters.` });
-                        return false;
-                    }
-                    if (field.validation.maxLength && value.length > field.validation.maxLength) {
-                        setMessage({ type: 'error', text: `${field.label} must be no more than ${field.validation.maxLength} characters.` });
-                        return false;
-                    }
-                    if (field.validation.pattern && !new RegExp(field.validation.pattern).test(value)) {
-                        setMessage({ type: 'error', text: `${field.label} format is invalid.` });
-                        return false;
+                if (field.validation) {
+                    const value = formData[field.id];
+                    if (value && typeof value === 'string') {
+                        if (field.validation.minLength && value.length < field.validation.minLength) {
+                            setMessage({ type: 'error', text: `${field.label} must be at least ${field.validation.minLength} characters.` });
+                            return false;
+                        }
+                        if (field.validation.maxLength && value.length > field.validation.maxLength) {
+                            setMessage({ type: 'error', text: `${field.label} must be no more than ${field.validation.maxLength} characters.` });
+                            return false;
+                        }
+                        if (field.validation.pattern && !new RegExp(field.validation.pattern).test(value)) {
+                            setMessage({ type: 'error', text: `${field.label} format is invalid.` });
+                            return false;
+                        }
                     }
                 }
             }
@@ -152,7 +154,7 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
     };
 
     const saveDraft = async () => {
-        if (!question) return;
+        if (!questions || questions.length === 0) return;
 
         setSaving(true);
         setMessage(null);
@@ -163,12 +165,16 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
                 value
             }));
 
+            // For multiple questions, we'll use the first question's ID as the primary
+            // but store responses for all fields from all questions
+            const primaryQuestionId = questions[0]._id;
+
             const response = await fetch('/api/ladder/submissions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     week,
-                    questionId: question._id,
+                    questionId: primaryQuestionId,
                     responses,
                     status: 'draft'
                 }),
@@ -191,7 +197,7 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
     };
 
     const submitForm = async () => {
-        if (!question || !validateForm()) return;
+        if (!questions || questions.length === 0 || !validateForm()) return;
 
         setSubmitting(true);
         setMessage(null);
@@ -202,12 +208,15 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
                 value
             }));
 
+            // For multiple questions, we'll use the first question's ID as the primary
+            const primaryQuestionId = questions[0]._id;
+
             const response = await fetch('/api/ladder/submissions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     week,
-                    questionId: question._id,
+                    questionId: primaryQuestionId,
                     responses,
                     status: 'submitted'
                 }),
@@ -337,7 +346,7 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
         );
     }
 
-    if (!question) {
+    if (!questions || questions.length === 0) {
         return (
             <div className="container mx-auto max-w-4xl py-10 px-4">
                 <Card>
@@ -372,7 +381,9 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold">{weekTitle} Submission</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">{question.title}</p>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                            {questions.length > 1 ? `${questions.length} questions` : questions[0].title}
+                        </p>
                     </div>
                     {submission && (
                         <Badge
@@ -409,79 +420,90 @@ export default function LadderSubmissionForm({ week }: LadderSubmissionFormProps
                 </Card>
             )}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>{question.title}</CardTitle>
-                    {question.description && (
-                        <CardDescription>{question.description}</CardDescription>
-                    )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {question.fields.map((field) => (
-                        <div key={field.id} className="space-y-2">
-                            <Label htmlFor={field.id} className="flex items-center">
-                                {field.label}
-                                {field.required && <span className="text-red-500 ml-1">*</span>}
-                            </Label>
-                            {renderField(field)}
-                        </div>
-                    ))}
-
-                    {submission?.status !== 'submitted' && (
-                        <div className="flex space-x-4 pt-6">
-                            <Button
-                                onClick={saveDraft}
-                                disabled={saving || submitting}
-                                variant="outline"
-                            >
-                                {saving ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="h-4 w-4 mr-2" />
-                                        Save Draft
-                                    </>
+            <div className="space-y-6">
+                {questions.map((question, questionIndex) => (
+                    <Card key={question._id}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                {questions.length > 1 && (
+                                    <Badge variant="outline" className="mr-3">
+                                        Question {questionIndex + 1}
+                                    </Badge>
                                 )}
-                            </Button>
+                                {question.title}
+                            </CardTitle>
+                            {question.description && (
+                                <CardDescription>{question.description}</CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {question.fields.map((field: QuestionField) => (
+                                <div key={field.id} className="space-y-2">
+                                    <Label htmlFor={field.id} className="flex items-center">
+                                        {field.label}
+                                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                                    </Label>
+                                    {renderField(field)}
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                ))}
 
-                            <Button
-                                onClick={submitForm}
-                                disabled={saving || submitting}
-                            >
-                                {submitting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Send className="h-4 w-4 mr-2" />
-                                        Submit
-                                    </>
+                {submission?.status !== 'submitted' && (
+                    <div className="flex space-x-4 pt-6">
+                        <Button
+                            onClick={saveDraft}
+                            disabled={saving || submitting}
+                            variant="outline"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Save Draft
+                                </>
+                            )}
+                        </Button>
+
+                        <Button
+                            onClick={submitForm}
+                            disabled={saving || submitting}
+                        >
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="h-4 w-4 mr-2" />
+                                    Submit
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )}
+
+                {submission?.status === 'submitted' && (
+                    <div className="pt-6">
+                        <Alert>
+                            <AlertDescription>
+                                This submission has been submitted and cannot be modified.
+                                {submission.submittedAt && (
+                                    <span className="block mt-1 text-sm text-gray-600">
+                                        Submitted on: {new Date(submission.submittedAt).toLocaleDateString()}
+                                    </span>
                                 )}
-                            </Button>
-                        </div>
-                    )}
-
-                    {submission?.status === 'submitted' && (
-                        <div className="pt-6">
-                            <Alert>
-                                <AlertDescription>
-                                    This submission has been submitted and cannot be modified.
-                                    {submission.submittedAt && (
-                                        <span className="block mt-1 text-sm text-gray-600">
-                                            Submitted on: {new Date(submission.submittedAt).toLocaleDateString()}
-                                        </span>
-                                    )}
-                                </AlertDescription>
-                            </Alert>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

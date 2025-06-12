@@ -62,6 +62,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Check for field ID conflicts with other questions in the same week
+        const existingQuestions = await LadderQuestion.find({ week, isActive: true });
+        const existingFieldIds = existingQuestions.flatMap(q => q.fields.map((f: any) => f.id));
+        const newFieldIds = fields.map(f => f.id);
+
+        const conflictingIds = newFieldIds.filter(id => existingFieldIds.includes(id));
+        if (conflictingIds.length > 0) {
+            return NextResponse.json({
+                error: `Field ID conflicts detected: ${conflictingIds.join(', ')}. Field IDs must be unique across all questions in the same week.`
+            }, { status: 400 });
+        }
+
         const question = new LadderQuestion({
             week,
             title,
