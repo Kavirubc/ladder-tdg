@@ -76,6 +76,8 @@ export default function AdminDashboard() {
         { id: 'todos', label: 'Todos', description: 'All tasks and todo items' },
         { id: 'completions', label: 'Completions', description: 'Activity completion records' },
         { id: 'progress', label: 'Progress', description: 'User progress and ladder data' },
+        { id: 'ladder-questions', label: 'Ladder Questions', description: 'All ladder program questions' },
+        { id: 'ladder-submissions', label: 'Ladder Submissions', description: 'All ladder program submissions' },
         { id: 'users', label: 'Users', description: 'All users (except admin)' }
     ];
 
@@ -257,6 +259,66 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats?.totalCompletions || 0}</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Quick Navigation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Target className="h-5 w-5 text-blue-500" />
+                            Ladder Program
+                        </CardTitle>
+                        <CardDescription>
+                            Manage ladder questions and review submissions
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <a href="/admin/ladder">
+                                Manage Ladder Program
+                            </a>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5 text-green-500" />
+                            Application Reviews
+                        </CardTitle>
+                        <CardDescription>
+                            Review and manage user applications
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full" variant="outline">
+                            <a href="/admin/applications">
+                                Review Applications
+                            </a>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-purple-500" />
+                            Analytics
+                        </CardTitle>
+                        <CardDescription>
+                            View detailed system analytics and reports
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full" variant="outline">
+                            <a href="#analytics">
+                                View Analytics
+                            </a>
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
