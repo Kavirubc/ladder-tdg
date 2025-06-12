@@ -29,12 +29,10 @@ export async function GET(request: NextRequest) {
         const questions = await LadderQuestion.find({
             week,
             isActive: true
-        }).sort({ createdAt: -1 }).limit(1).lean();
+        }).sort({ createdAt: 1 }).lean();
 
-        // Return the most recent active question for the week
-        const question = questions[0] || null;
-
-        return NextResponse.json({ question });
+        // Return all active questions for the week
+        return NextResponse.json({ questions });
     } catch (error) {
         console.error('Error fetching ladder questions:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -56,6 +56,7 @@ interface LadderSubmission {
     score?: number;
     createdAt: string;
     updatedAt: string;
+    enhancedResponses?: { fieldId: string; value: any; fieldInfo?: any }[];
 }
 
 export default function AdminLadderManagement() {
@@ -218,6 +219,12 @@ export default function AdminLadderManagement() {
             return;
         }
 
+        // Check for field ID uniqueness across all questions for the same week
+        if (questionForm.fields.some(field => field.id === newField.id)) {
+            setMessage({ type: 'error', text: 'Field ID must be unique within this question' });
+            return;
+        }
+
         const field: QuestionField = {
             id: newField.id!,
             type: newField.type as any,
@@ -270,7 +277,35 @@ export default function AdminLadderManagement() {
             const response = await fetch(`/api/admin/ladder/submissions/${submissionId}`);
             if (response.ok) {
                 const data = await response.json();
-                setViewingSubmission(data.submission);
+                const submission = data.submission;
+
+                // Fetch all questions for this week to get proper field labels
+                const questionsResponse = await fetch(`/api/admin/ladder/questions`);
+                if (questionsResponse.ok) {
+                    const questionsData = await questionsResponse.json();
+                    const weekQuestions = questionsData.questions.filter((q: any) =>
+                        q.week === submission.week && q.isActive
+                    );
+
+                    // Create a field lookup map
+                    const fieldMap: { [key: string]: any } = {};
+                    weekQuestions.forEach((question: any) => {
+                        question.fields.forEach((field: any) => {
+                            fieldMap[field.id] = {
+                                ...field,
+                                questionTitle: question.title
+                            };
+                        });
+                    });
+
+                    // Enhance responses with field information
+                    submission.enhancedResponses = submission.responses.map((response: any) => ({
+                        ...response,
+                        fieldInfo: fieldMap[response.fieldId] || null
+                    }));
+                }
+
+                setViewingSubmission(submission);
                 setShowSubmissionDetails(true);
             } else {
                 setMessage({ type: 'error', text: 'Failed to load submission details' });
@@ -308,7 +343,10 @@ export default function AdminLadderManagement() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle>Ladder Questions</CardTitle>
-                                    <CardDescription>Manage questions for each week of the ladder program</CardDescription>
+                                    <CardDescription>
+                                        Manage questions for each week of the ladder program.
+                                        Multiple questions per week will be displayed together in one form.
+                                    </CardDescription>
                                 </div>
                                 <Dialog open={showQuestionForm} onOpenChange={setShowQuestionForm}>
                                     <DialogTrigger asChild>
@@ -394,6 +432,9 @@ export default function AdminLadderManagement() {
                                                 {/* Add new field */}
                                                 <div className="border rounded p-4 mt-4 space-y-3">
                                                     <h4 className="font-medium">Add New Field</h4>
+                                                    <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                                                        <strong>Important:</strong> Field IDs must be unique across ALL questions in the same week since they'll be displayed together.
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
                                                             <Label>Field ID</Label>
@@ -467,6 +508,29 @@ export default function AdminLadderManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
+                            {/* Week Summary */}
+                            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <h3 className="font-semibold mb-3">Questions per Week</h3>
+                                <div className="grid grid-cols-5 gap-4">
+                                    {['week1', 'week2', 'week3', 'week4', 'complete'].map((week) => {
+                                        const weekQuestions = questions.filter(q => q.week === week && q.isActive);
+                                        return (
+                                            <div key={week} className="text-center">
+                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {week.replace('week', 'Week ').replace('complete', 'Complete')}
+                                                </div>
+                                                <div className="text-2xl font-bold text-blue-600">
+                                                    {weekQuestions.length}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {weekQuestions.length === 1 ? 'question' : 'questions'}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -711,16 +775,60 @@ export default function AdminLadderManagement() {
 
                             {/* Responses */}
                             <div>
-                                <Label className="text-lg font-semibold">Responses</Label>
-                                <div className="space-y-4 mt-3">
-                                    {viewingSubmission.questionId?.fields?.map((field: any) => {
-                                        const response = viewingSubmission.responses.find(r => r.fieldId === field.id);
-                                        return (
-                                            <div key={field.id} className="border rounded-lg p-4">
-                                                <Label className="font-medium">{field.label}</Label>
-                                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                                <Label className="text-lg font-semibold">All Responses</Label>
+                                <div className="space-y-6 mt-3">
+                                    {viewingSubmission.enhancedResponses ? (
+                                        // Group responses by question
+                                        (() => {
+                                            const groupedByQuestion: { [key: string]: any[] } = {};
+                                            viewingSubmission.enhancedResponses.forEach((response: any) => {
+                                                const questionTitle = response.fieldInfo?.questionTitle || 'Unknown Question';
+                                                if (!groupedByQuestion[questionTitle]) {
+                                                    groupedByQuestion[questionTitle] = [];
+                                                }
+                                                groupedByQuestion[questionTitle].push(response);
+                                            });
+
+                                            return Object.entries(groupedByQuestion).map(([questionTitle, responses]) => (
+                                                <div key={questionTitle} className="border-2 border-blue-200 rounded-lg p-4">
+                                                    <h3 className="text-lg font-semibold text-blue-800 mb-4">{questionTitle}</h3>
+                                                    <div className="space-y-3">
+                                                        {responses.map((response: any) => (
+                                                            <div key={response.fieldId} className="border rounded-lg p-3 bg-white">
+                                                                <Label className="font-medium">
+                                                                    {response.fieldInfo?.label || response.fieldId}
+                                                                    {response.fieldInfo?.required && <span className="text-red-500 ml-1">*</span>}
+                                                                </Label>
+                                                                <div className="mt-2 p-3 bg-gray-50 rounded border">
+                                                                    {response.value ? (
+                                                                        Array.isArray(response.value) ? (
+                                                                            <ul className="list-disc list-inside">
+                                                                                {response.value.map((item: any, index: number) => (
+                                                                                    <li key={index}>{item}</li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        ) : (
+                                                                            <p className="whitespace-pre-wrap">{response.value}</p>
+                                                                        )
+                                                                    ) : (
+                                                                        <p className="text-gray-500 italic">No response provided</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()
+                                    ) : (
+                                        // Fallback for submissions without enhanced data
+                                        viewingSubmission.responses.map((response: any, index: number) => (
+                                            <div key={response.fieldId} className="border rounded-lg p-4">
+                                                <Label className="font-medium">
+                                                    Field ID: {response.fieldId}
+                                                </Label>
                                                 <div className="mt-2 p-3 bg-gray-50 rounded border">
-                                                    {response ? (
+                                                    {response.value ? (
                                                         Array.isArray(response.value) ? (
                                                             <ul className="list-disc list-inside">
                                                                 {response.value.map((item: any, index: number) => (
@@ -735,8 +843,8 @@ export default function AdminLadderManagement() {
                                                     )}
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+                                        ))
+                                    )}
                                 </div>
                             </div>
 

@@ -48,6 +48,24 @@ export async function PUT(
         const { id } = await params;
         const body = await request.json();
 
+        // If updating fields, check for conflicts with other questions in the same week
+        if (body.fields && body.week) {
+            const existingQuestions = await LadderQuestion.find({
+                week: body.week,
+                isActive: true,
+                _id: { $ne: id } // Exclude current question
+            });
+            const existingFieldIds = existingQuestions.flatMap(q => q.fields.map((f: any) => f.id));
+            const newFieldIds = body.fields.map((f: any) => f.id);
+
+            const conflictingIds = newFieldIds.filter((fieldId: string) => existingFieldIds.includes(fieldId));
+            if (conflictingIds.length > 0) {
+                return NextResponse.json({
+                    error: `Field ID conflicts detected: ${conflictingIds.join(', ')}. Field IDs must be unique across all questions in the same week.`
+                }, { status: 400 });
+            }
+        }
+
         const question = await LadderQuestion.findByIdAndUpdate(
             id,
             { ...body, updatedAt: new Date() },
