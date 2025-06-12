@@ -72,6 +72,26 @@ export default function Navbar() {
 
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center space-x-4">
+                            {/* Regular User Links */}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => router.push('/dashboard')}
+                                className="flex items-center space-x-2"
+                                data-ph-event="navbar_action"
+                            >
+                                <span>Dashboard</span>
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => router.push('/ladder')}
+                                className="flex items-center space-x-2"
+                                data-ph-event="navbar_action"
+                            >
+                                <span>Ladder</span>
+                            </Button>
+
                             {/* Admin Links for desktop */}
                             {isAdmin && (
                                 <>
@@ -83,7 +103,7 @@ export default function Navbar() {
                                         data-ph-event="navbar_action"
                                     >
                                         <Shield className="h-4 w-4" />
-                                        <span>Dashboard</span>
+                                        <span>Admin</span>
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -138,6 +158,28 @@ export default function Navbar() {
                                         </div>
 
                                         <div className="flex flex-col space-y-2">
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    router.push('/dashboard');
+                                                    setIsOpen(false);
+                                                }}
+                                                className="justify-start"
+                                            >
+                                                Dashboard
+                                            </Button>
+
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    router.push('/ladder');
+                                                    setIsOpen(false);
+                                                }}
+                                                className="justify-start"
+                                            >
+                                                Ladder Submissions
+                                            </Button>
+
                                             {isAdmin && (
                                                 <>
                                                     <Button
@@ -163,17 +205,6 @@ export default function Navbar() {
                                                     </Button>
                                                 </>
                                             )}
-
-                                            <Button
-                                                variant="ghost"
-                                                onClick={() => {
-                                                    router.push('/dashboard');
-                                                    setIsOpen(false);
-                                                }}
-                                                className="justify-start"
-                                            >
-                                                Dashboard
-                                            </Button>
                                         </div>
 
                                         <div className="border-t pt-4 mt-auto">

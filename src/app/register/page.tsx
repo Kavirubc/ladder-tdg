@@ -81,7 +81,7 @@ export default function RegisterPage() {
 
   return (
     <>
-      <div className="w-full fixed top-0 left-0 z-50 flex justify-center">
+      {/* <div className="w-full fixed top-0 left-0 z-50 flex justify-center">
         <div className="bg-green-600 text-white px-6 py-2 flex flex-row items-center justify-center gap-4 w-full max-w-screen text-center">
           <span className="text-center">🚀 Application Open Now! Apply today to join the Ladder community.</span>
           <Link href="/apply">
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             </Button>
           </Link>
         </div>
-      </div>
+      </div> */}
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

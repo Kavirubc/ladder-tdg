@@ -7,6 +7,8 @@ import Activity from '@/models/Activity';
 import Todo from '@/models/Todo';
 import ActivityCompletion from '@/models/ActivityCompletion';
 import LadderProgress from '@/models/LadderProgress';
+import LadderQuestion from '@/models/LadderQuestion';
+import LadderSubmission from '@/models/LadderSubmission';
 
 // POST - Clean database (requires admin password)
 export async function POST(request: Request) {
@@ -50,6 +52,14 @@ export async function POST(request: Request) {
                 case 'progress':
                     const deletedProgress = await LadderProgress.deleteMany({});
                     results.progress = deletedProgress.deletedCount;
+                    break;
+                case 'ladder-questions':
+                    const deletedQuestions = await LadderQuestion.deleteMany({});
+                    results.ladderQuestions = deletedQuestions.deletedCount;
+                    break;
+                case 'ladder-submissions':
+                    const deletedSubmissions = await LadderSubmission.deleteMany({});
+                    results.ladderSubmissions = deletedSubmissions.deletedCount;
                     break;
                 case 'users':
                     // Don't delete admin user
