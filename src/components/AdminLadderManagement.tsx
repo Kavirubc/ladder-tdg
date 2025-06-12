@@ -68,6 +68,8 @@ export default function AdminLadderManagement() {
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [showQuestionForm, setShowQuestionForm] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<LadderQuestion | null>(null);
+    const [viewingSubmission, setViewingSubmission] = useState<LadderSubmission | null>(null);
+    const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Form state for question creation/editing
@@ -260,6 +262,21 @@ export default function AdminLadderManagement() {
             }
         } catch (error) {
             setMessage({ type: 'error', text: 'Failed to update submission' });
+        }
+    };
+
+    const handleViewSubmission = async (submissionId: string) => {
+        try {
+            const response = await fetch(`/api/admin/ladder/submissions/${submissionId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setViewingSubmission(data.submission);
+                setShowSubmissionDetails(true);
+            } else {
+                setMessage({ type: 'error', text: 'Failed to load submission details' });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Failed to load submission details' });
         }
     };
 
@@ -596,7 +613,11 @@ export default function AdminLadderManagement() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex space-x-2">
-                                                    <Button variant="outline" size="sm">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm"
+                                                        onClick={() => handleViewSubmission(submission._id)}
+                                                    >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                     <Select onValueChange={(status) => updateSubmissionStatus(submission._id, status)}>
@@ -619,6 +640,156 @@ export default function AdminLadderManagement() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Submission Details Dialog */}
+            <Dialog open={showSubmissionDetails} onOpenChange={setShowSubmissionDetails}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Submission Details</DialogTitle>
+                        <DialogDescription>
+                            {viewingSubmission && (
+                                <span>
+                                    {viewingSubmission.userName} - {viewingSubmission.week.replace('week', 'Week ').replace('complete', 'Program Complete')}
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {viewingSubmission && (
+                        <div className="space-y-6">
+                            {/* Submission Info */}
+                            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <Label className="text-sm font-medium text-gray-600">User</Label>
+                                    <p className="text-sm">{viewingSubmission.userName}</p>
+                                    <p className="text-xs text-gray-500">{viewingSubmission.userEmail}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-sm font-medium text-gray-600">Status</Label>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <Badge 
+                                            variant={viewingSubmission.status === 'approved' ? 'default' : 
+                                                    viewingSubmission.status === 'rejected' ? 'destructive' : 'secondary'}
+                                        >
+                                            {viewingSubmission.status.charAt(0).toUpperCase() + viewingSubmission.status.slice(1)}
+                                        </Badge>
+                                        {viewingSubmission.score !== undefined && (
+                                            <Badge variant="outline">Score: {viewingSubmission.score}/100</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label className="text-sm font-medium text-gray-600">Submitted</Label>
+                                    <p className="text-sm">
+                                        {viewingSubmission.submittedAt ? 
+                                            new Date(viewingSubmission.submittedAt).toLocaleDateString() : 
+                                            'Not submitted'
+                                        }
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label className="text-sm font-medium text-gray-600">Reviewed</Label>
+                                    <p className="text-sm">
+                                        {viewingSubmission.reviewedAt ? 
+                                            new Date(viewingSubmission.reviewedAt).toLocaleDateString() : 
+                                            'Not reviewed'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Question Title */}
+                            {viewingSubmission.questionId && (
+                                <div>
+                                    <Label className="text-lg font-semibold">Question</Label>
+                                    <p className="text-gray-700 mt-1">{viewingSubmission.questionId.title}</p>
+                                    {viewingSubmission.questionId.description && (
+                                        <p className="text-gray-600 text-sm mt-1">{viewingSubmission.questionId.description}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Responses */}
+                            <div>
+                                <Label className="text-lg font-semibold">Responses</Label>
+                                <div className="space-y-4 mt-3">
+                                    {viewingSubmission.questionId?.fields?.map((field: any) => {
+                                        const response = viewingSubmission.responses.find(r => r.fieldId === field.id);
+                                        return (
+                                            <div key={field.id} className="border rounded-lg p-4">
+                                                <Label className="font-medium">{field.label}</Label>
+                                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                                                <div className="mt-2 p-3 bg-gray-50 rounded border">
+                                                    {response ? (
+                                                        Array.isArray(response.value) ? (
+                                                            <ul className="list-disc list-inside">
+                                                                {response.value.map((item: any, index: number) => (
+                                                                    <li key={index}>{item}</li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : (
+                                                            <p className="whitespace-pre-wrap">{response.value}</p>
+                                                        )
+                                                    ) : (
+                                                        <p className="text-gray-500 italic">No response provided</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Review Comments */}
+                            {viewingSubmission.reviewComments && (
+                                <div>
+                                    <Label className="text-lg font-semibold">Review Comments</Label>
+                                    <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="whitespace-pre-wrap">{viewingSubmission.reviewComments}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Buttons for Review */}
+                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowSubmissionDetails(false)}
+                                >
+                                    Close
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        updateSubmissionStatus(viewingSubmission._id, 'reviewed');
+                                        setShowSubmissionDetails(false);
+                                    }}
+                                    variant="secondary"
+                                >
+                                    Mark as Reviewed
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        updateSubmissionStatus(viewingSubmission._id, 'approved');
+                                        setShowSubmissionDetails(false);
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700"
+                                >
+                                    Approve
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        updateSubmissionStatus(viewingSubmission._id, 'rejected');
+                                        setShowSubmissionDetails(false);
+                                    }}
+                                    variant="destructive"
+                                >
+                                    Reject
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
