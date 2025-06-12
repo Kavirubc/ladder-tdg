@@ -27,7 +27,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Simplified Application Banner with Notion-like design */}
-        <div className="application-banner">
+        {/* <div className="application-banner">
           <div className="application-banner-content">
             <h2 className="flex items-center gap-2">
               <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
               </svg>
             </button>
           </a>
-        </div>
+        </div> */}
 
         <div id="main-content" className="animate-fade-in">
           <IntegratedDashboard userId={session.user.id} />
